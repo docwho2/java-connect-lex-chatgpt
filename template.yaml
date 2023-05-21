@@ -1,0 +1,416 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS Connect ChatGPT Integration
+
+Parameters:
+  CONNECTARN:
+    Description: Connect ARN to attach LEX Bot to
+    Type: String
+    Default: arn:aws:connect:us-east-1:364253738352:instance/f837ec93-b6e5-4429-acb7-f698fff0148c
+  OPENAIAPIKEY:
+    Description: OpenAI Key stored in parameter store
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OPENAI_API_KEY
+
+Globals:
+  Function:
+    Environment: 
+      Variables:
+        JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
+    Runtime: java11
+    Timeout: 30
+    MemorySize: 3009
+    Architectures:  # Snap on Java 11 requires x86
+        - x86_64
+
+Resources:
+  BucketKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Key Used for Bucket Encryption
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: !Sub ${AWS::StackName}-bucket-key
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+          - Sid: Allow Key Administrators to Manage Key
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:role/AdministratorRole
+            Action:
+              - kms:Create*
+              - kms:Describe*
+              - kms:Enable*
+              - kms:List*
+              - kms:Put*
+              - kms:Update*
+              - kms:Revoke*
+              - kms:Disable*
+              - kms:Get*
+              - kms:Delete*
+              - kms:ScheduleKeyDeletion
+              - kms:CancelKeyDeletion
+            Resource: '*'
+          - Sid: Allow Encrypt and Decrypt for All Principals
+            Effect: Allow
+            Principal:
+              AWS: '*'
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+            Resource: '*'
+          - Sid: Allow Connect to also use the key when reading prompts
+            Effect: Allow
+            Principal:
+              Service: connect.amazonaws.com
+            Action:
+              - kms:Decrypt
+            Resource: '*'
+            
+            
+  PromptBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-prompts
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !Ref BucketKey
+ 
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PromptBucket
+      PolicyDocument:  
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowConnectAccess
+            Effect: Allow
+            Principal:
+              Service: connect.amazonaws.com
+            Action:
+              - s3:ListBucket
+              - s3:GetObject
+            Resource:
+              - !GetAtt PromptBucket.Arn
+              - !Join [ "", [ !GetAtt PromptBucket.Arn , '/*' ] ]
+            Condition:
+              StringEquals:
+                "aws:SourceArn": !Ref CONNECTARN
+                "aws:SourceAccount": !Sub "${AWS::AccountId}"
+                
+ 
+  PromptCreator:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-PromptCreator
+      Description: Creates Static prompts to be used in Connect Flows
+      Handler: cloud.cleo.connectgpt.PollyPromptGenerator
+      CodeUri: ./PolyPromptCreation
+      Environment: 
+        Variables:
+            PROMPT_BUCKET: !Ref PromptBucket
+      Policies: 
+        - S3CrudPolicy:
+            BucketName: !Ref PromptBucket
+        - Version: '2012-10-17' 
+          Statement:
+            - Effect: Allow
+              Action:
+                - polly:SynthesizeSpeech
+              Resource: '*'
+            
+  
+  MainPrompt:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        PromptName: main.wav
+        PromptText: |
+            Welcome to CLEO Cloud Solutions, thank you for calling.  You may ask Chat GPT anything you wish.
+
+  ClosingPrompt:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        PromptName: closing.wav
+        PromptText: Thank you for calling, good bye
+            
+  ThinkingPrompt:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        PromptName: thinking.wav
+        PromptText: Thinking
+        
+  HelpPrompt:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        PromptName: help.wav
+        PromptText: !
+            This is a combined LEX and ChatGPT model.  
+            You can ask for Steve and the call will be transferred, say good bye, or phrase any question for Chat GPT.
+            Your context will be maintained between calls for each day, so you can hang up, call back, and you will not lose context.
+            
+            
+  BotRuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lexv2.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: LexRuntimeRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "polly:SynthesizeSpeech"
+                  - "comprehend:DetectSentiment"
+                  - "lambda:invokeFunction"
+                Resource: "*"
+                
+  LexBot:
+    Type: AWS::Lex::Bot
+    Properties:
+      Name: MyLexBot
+      Description: ChatGPT Bot
+      RoleArn: !GetAtt BotRuntimeRole.Arn
+      DataPrivacy:
+        ChildDirected: false
+      AutoBuildBotLocales: false
+      IdleSessionTTLInSeconds: 300
+      BotLocales:
+        - LocaleId: en_US
+          Description: ChatGPT Bot
+          NluConfidenceThreshold: 0.40
+          VoiceSettings:
+            VoiceId: "Joanna"
+          Intents:
+            - Name: "About"
+              Description: "Play a help prompt"
+              SampleUtterances:
+                - Utterance: "I'm confused"
+                - Utterance: "help"
+                - Utterance: "What can this do"
+                - Utterance: "what can I say"
+                - Utterance: "give me some examples"
+                - Utterance: "Help me out here"
+                - Utterance: "I need help"
+            - Name: "Quit"
+              Description: "Hang Up the call"
+              SampleUtterances:
+                - Utterance: "quit"
+                - Utterance: "I'm done"
+                - Utterance: "good bye"
+                - Utterance: "talk to you later"
+                - Utterance: "see ya"
+                - Utterance: "later"
+                - Utterance: "exit"
+              ParentIntentSignature: "AMAZON.StopIntent"
+            - Name: "Steve"
+              Description: "Send Call to Steve"
+              SampleUtterances:
+                - Utterance: "Steve"
+                - Utterance: "Steve Jensen"
+                - Utterance: "I want to talk with Steve"
+                - Utterance: "I want to talk with Steve Jensen"
+                - Utterance: "speak with someone"
+                - Utterance: "talk to someone"
+                - Utterance: "speak with a person"
+                - Utterance: "connect with Steve"
+                - Utterance: "connect with Steve Jensen"
+            - Name: "FallbackIntent"
+              Description: "Default intent when no other intent matches, send to GPT"
+              ParentIntentSignature: "AMAZON.FallbackIntent"
+              FulfillmentCodeHook:
+                  Enabled: true
+                  
+          
+          
+  BotVersion:
+    Type: AWS::Lex::BotVersion
+    Properties:
+      BotId: !Ref LexBot
+      BotVersionLocaleSpecification:
+        - LocaleId: en_US
+          BotVersionLocaleDetails:
+            SourceBotVersion: DRAFT
+      Description: ChatGPT Bot
+      
+  FirstBotAliasWithCFN:
+    Type: AWS::Lex::BotAlias
+    Properties:
+      BotId: !Ref LexBot
+      BotAliasName: "Latest"
+      BotVersion: !GetAtt BotVersion.BotVersion
+      SentimentAnalysisSettings:
+        DetectSentiment: false
+      BotAliasLocaleSettings:
+        - LocaleId: en_US
+          BotAliasLocaleSetting:
+            Enabled: true
+            CodeHookSpecification:
+              LambdaCodeHook:
+                CodeHookInterfaceVersion: "1.0"
+                LambdaArn: !Ref ChatGPTalias
+        
+  LexV2ConnectIntegration:
+    Type: AWS::Connect::IntegrationAssociation
+    Properties:
+      InstanceId: !Ref CONNECTARN
+      IntegrationType: LEX_BOT
+      IntegrationArn: !GetAtt FirstBotAliasWithCFN.Arn
+      
+  
+  NewCallTopic:
+        Type: AWS::SNS::Topic
+        Properties:
+            DisplayName: Connect
+            TopicName: ConnectNewCall
+            
+            
+  SendToSNS:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-ForwardEventToSNS
+      Description: Lambda that will forward payload to SNS Topic when new call arrives
+      Handler: index.handler
+      Runtime: nodejs18.x
+      MemorySize: 512
+      Timeout: 5
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref NewCallTopic
+          # Don't need to set anything for this lambda other than above
+          JAVA_TOOL_OPTIONS: !Ref AWS::NoValue
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt NewCallTopic.TopicName
+      InlineCode: !Sub |
+        const {SNSClient, PublishCommand} = require("@aws-sdk/client-sns");
+        const client = new SNSClient();
+        const sns_topic = process.env.SNS_TOPIC_ARN;
+        exports.handler = async function (event) {
+            //console.log(JSON.stringify(event));
+            const params = {
+                Message: JSON.stringify(event),
+                TopicArn: ${NewCallTopic}
+            };
+            const response = await client.send(new PublishCommand(params));
+            //console.log("Success, message sent. MessageID:", response.MessageId);
+            return {status: 'OK'};
+        };
+            
+  SendToSNSConnectIntegration:
+    Type: AWS::Connect::IntegrationAssociation
+    Properties:
+      InstanceId: !Ref CONNECTARN
+      IntegrationType: LAMBDA_FUNCTION
+      IntegrationArn: !GetAtt SendToSNS.Arn
+  
+  ContactUpdatePolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+        Description: Allow Lambdas to update Contact Center attributes on Connect Contact
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - connect:UpdateContactAttributes
+                Resource: '*'
+                
+  NewCallLookup:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-NewCallLookup
+      Description: Lookup counters from Dynamo Table and set contact values
+      Handler: cloud.cleo.connectgpt.NewCallLookup
+      CodeUri: ./NewCallLookup
+      SnapStart:
+        ApplyOn: PublishedVersions
+      AutoPublishAlias: SNAP
+      DeploymentPreference:
+        Type: AllAtOnce
+      Policies: 
+        - !Ref ContactUpdatePolicy
+      Events:
+        SNSTrigger:
+            Type: SNS
+            Properties:
+                Topic: !Ref NewCallTopic
+                
+  ChatGPT:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-ChatGPT
+      Description: Lex fullfilment that talks to ChatGPT service
+      Handler: cloud.cleo.connectgpt.ChatGPTLambda
+      CodeUri: ./ChatGPT
+      Environment: 
+        Variables:
+          OPENAI_MODEL: gpt-3.5-turbo
+          OPENAI_API_KEY: !Ref OPENAIAPIKEY
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Policies: 
+        - !Ref ContactUpdatePolicy
+  
+  ChatGPTVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref ChatGPT
+      Description: v1
+  
+  ChatGPTalias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref ChatGPT
+      FunctionVersion: !GetAtt ChatGPTVersion.Version
+      Name: SNAP
+        
+  LexToChatGPTPerm:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: !GetAtt ChatGPT.Arn
+        Action: lambda:InvokeFunction
+        Principal: lexv2.amazonaws.com
+        SourceAccount: !Ref 'AWS::AccountId'
+  
+  LexToChatGPTSnapPerm:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: !Ref ChatGPTalias
+        Action: lambda:InvokeFunction
+        Principal: lexv2.amazonaws.com
+        SourceAccount: !Ref 'AWS::AccountId'
+
+              
+              
+  
+      
+  
+   
+
+
+     

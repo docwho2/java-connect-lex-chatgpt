@@ -1,0 +1,151 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>cloud.cleo.awsconnect-chatgpt</groupId>
+    <artifactId>parent-pom</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0</version>
+    <name>Parent POM</name>
+    <description>Top Level POM</description>
+    <organization>
+        <name>CLEO Cloud Solutions</name>
+        <url>https://cleo.cloud</url>
+    </organization>
+    <developers>
+        <developer>
+            <name>Steve Jensen</name>
+            <email>steve@cleo.cloud</email>
+            <organization>CLEO Cloud Solutions</organization>
+            <organizationUrl>https://cleo.cloud</organizationUrl>
+        </developer>
+    </developers>
+    
+    
+    <dependencyManagement>
+        <dependencies>
+            
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>2.16.104</version>
+                <type>pom</type>
+                <scope>import</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>software.amazon.awssdk</groupId>
+                        <artifactId>netty-nio-client</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+  
+            
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-lambda-java-core</artifactId>
+                <version>1.2.2</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-lambda-java-events</artifactId>
+                <version>3.11.1</version>
+            </dependency>
+            
+            
+            <!-- Lambda Logging --> 
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-lambda-java-log4j2</artifactId>
+                <version>1.5.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>2.20.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>2.20.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j18-impl</artifactId>
+                <version>2.18.0</version>
+            </dependency>
+            
+            
+            <!-- Used when we need to respond to CloudFormation for Custom Resources --> 
+            <dependency>
+                <groupId>software.amazon.lambda</groupId>
+                <artifactId>powertools-cloudformation</artifactId>
+                <version>1.15.0</version>
+            </dependency>
+            
+            
+            <!-- Phone Number Validation and lookup --> 
+            <dependency>
+                <groupId>com.googlecode.libphonenumber</groupId>
+                <artifactId>libphonenumber</artifactId>
+                <version>8.13.11</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.libphonenumber</groupId>
+                <artifactId>geocoder</artifactId>
+                <version>2.205</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>com.amazonaws.secretsmanager</groupId>
+                <artifactId>aws-secretsmanager-jdbc</artifactId>
+                <version>1.0.12</version>
+            </dependency>
+        
+            <dependency>
+                <groupId>me.xdrop</groupId>
+                <artifactId>fuzzywuzzy</artifactId>
+                <version>1.4.0</version>
+            </dependency>
+        
+            
+            <dependency>
+                <groupId>com.slack.api</groupId>
+                <artifactId>slack-api-client</artifactId>
+                <version>1.29.2</version>
+            </dependency>
+            
+            
+        
+        </dependencies>
+    </dependencyManagement>
+    
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <extensions>
+            <extension>
+                <!-- to support S3 URL's -->
+                <groupId>org.springframework.build</groupId>
+                <artifactId>aws-maven</artifactId>
+            </extension>
+        </extensions>
+    </build>
+</project>

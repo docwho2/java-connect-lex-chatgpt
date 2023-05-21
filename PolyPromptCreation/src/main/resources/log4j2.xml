@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+    <Lambda name="Lambda">
+      <PatternLayout>
+          <pattern>%X{AWSRequestId} %-5p %c{1} - %m%n</pattern>
+      </PatternLayout>
+    </Lambda>
+  </Appenders>
+    <Loggers>
+        <Logger name="Lambda" level="DEBUG" additivity="false">
+            <AppenderRef ref="Lambda"/>
+        </Logger>
+        <Root level="debug">
+            <AppenderRef ref="Lambda"/>
+        </Root>
+        
+        <Logger name="software.amazon.lambda.powertools" level="DEBUG"/>
+
+        <Logger name="software.amazon.awssdk" level="DEBUG"/>
+           
+        <Logger name="software.amazon.awssdk.request" level="DEBUG"/>
+          
+        <Logger name="org.jooq" level="DEBUG"/>
+            
+    </Loggers>
+</Configuration>
