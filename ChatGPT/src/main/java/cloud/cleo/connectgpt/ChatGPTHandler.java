@@ -10,9 +10,10 @@ import com.github.softwarebymark.lex.domain.FulfillmentState;
 import com.github.softwarebymark.lex.domain.Intent;
 import com.github.softwarebymark.lex.domain.LexRequest;
 import com.github.softwarebymark.lex.domain.LexResponse;
-import com.theokanning.openai.OpenAiService;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
+import com.theokanning.openai.completion.chat.ChatMessageRole;
+import com.theokanning.openai.service.OpenAiService;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -52,7 +53,7 @@ public class ChatGPTHandler extends AbstractLexRequestHandler {
         } catch (Exception e) {
             log.error(e);
 
-            return createCloseDialogActionResponse(FulfillmentState.Failed, "Sorry, I'm having a problem fulfilling your request.  Please try again later.",
+            return createCloseDialogActionResponse(FulfillmentState.Failed, "Sorry, I'm having a problem fulfilling your request.  Chat GPT might be down, Please try again later.",
                     new Intent(lexRequest.getSessionState().getIntent(), FulfillmentState.Failed));
         }
         return createCloseDialogActionResponse(FulfillmentState.Failed, "Could Not match any intents",
@@ -61,7 +62,7 @@ public class ChatGPTHandler extends AbstractLexRequestHandler {
 
     private LexResponse processGPT(LexRequest lexRequest) {
         ChatCompletionRequest request = ChatCompletionRequest.builder()
-                .messages(List.of(new ChatMessage("user",lexRequest.getInputTranscript())))
+                .messages(List.of(new ChatMessage(ChatMessageRole.USER.value(),lexRequest.getInputTranscript())))
                 .model(OPENAI_MODEL)
                 .maxTokens(500)
                 .build();
