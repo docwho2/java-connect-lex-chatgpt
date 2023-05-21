@@ -226,7 +226,6 @@ Resources:
                 - Utterance: "see ya"
                 - Utterance: "later"
                 - Utterance: "exit"
-              ParentIntentSignature: "AMAZON.StopIntent"
             - Name: "Steve"
               Description: "Send Call to Steve"
               SampleUtterances:
@@ -309,12 +308,11 @@ Resources:
       InlineCode: !Sub |
         const {SNSClient, PublishCommand} = require("@aws-sdk/client-sns");
         const client = new SNSClient();
-        const sns_topic = process.env.SNS_TOPIC_ARN;
         exports.handler = async function (event) {
             //console.log(JSON.stringify(event));
             const params = {
                 Message: JSON.stringify(event),
-                TopicArn: ${NewCallTopic}
+                TopicArn: '${NewCallTopic}'
             };
             const response = await client.send(new PublishCommand(params));
             //console.log("Success, message sent. MessageID:", response.MessageId);
