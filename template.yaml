@@ -271,7 +271,7 @@ Resources:
             CodeHookSpecification:
               LambdaCodeHook:
                 CodeHookInterfaceVersion: "1.0"
-                LambdaArn: !Ref ChatGPTalias
+                LambdaArn: !Ref ChatGPT.Alias
         
   LexV2ConnectIntegration:
     Type: AWS::Connect::IntegrationAssociation
@@ -364,33 +364,28 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-ChatGPT
       Description: Lex fullfilment that talks to ChatGPT service
       Handler: cloud.cleo.connectgpt.ChatGPTLambda
+      AutoPublishAlias: SNAPSTART
       CodeUri: ./ChatGPT
       Environment: 
         Variables:
           OPENAI_MODEL: gpt-3.5-turbo
           OPENAI_API_KEY: !Ref OPENAIAPIKEY
+          SESSION_TABLE_NAME: !Ref SessionTable
       SnapStart:
         ApplyOn: PublishedVersions
       Policies: 
         - !Ref ContactUpdatePolicy
+        - DynamoDBReadPolicy:
+            TableName: !Ref SessionTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref SessionTable
   
-  ChatGPTVersion:
-    Type: AWS::Lambda::Version
-    Properties:
-      FunctionName: !Ref ChatGPT
-      Description: v1
   
-  ChatGPTalias:
-    Type: AWS::Lambda::Alias
-    Properties:
-      FunctionName: !Ref ChatGPT
-      FunctionVersion: !GetAtt ChatGPTVersion.Version
-      Name: SNAP
         
   LexToChatGPTPerm:
       Type: AWS::Lambda::Permission
       Properties:
-        FunctionName: !GetAtt ChatGPT.Arn
+        FunctionName: !Ref ChatGPT
         Action: lambda:InvokeFunction
         Principal: lexv2.amazonaws.com
         SourceAccount: !Ref 'AWS::AccountId'
@@ -398,17 +393,28 @@ Resources:
   LexToChatGPTSnapPerm:
       Type: AWS::Lambda::Permission
       Properties:
-        FunctionName: !Ref ChatGPTalias
+        FunctionName: !Ref ChatGPT.Alias
         Action: lambda:InvokeFunction
         Principal: lexv2.amazonaws.com
         SourceAccount: !Ref 'AWS::AccountId'
-
-              
-              
   
-      
-  
-   
-
-
-     
+  SessionTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub ${AWS::StackName}-session
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: phoneNumber
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: phoneNumber
+          KeyType: HASH
+        - AttributeName: date
+          KeyType: RANGE
+      TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+          

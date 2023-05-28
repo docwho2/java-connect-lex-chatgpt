@@ -42,19 +42,24 @@ public class LexRequest {
     //private OutputDialogMode outputDialogMode;
     private String messageVersion;
     private SessionState sessionState;
+    private String inputMode;
+    private String sessionId;
 
     public LexRequest(
                       @JsonProperty("bot") Bot bot,
                       @JsonProperty("inputTranscript") String inputTranscript,
                       @JsonProperty("invocationSource") InvocationSource invocationSource,
                       @JsonProperty("messageVersion") String messageVersion,
-                      @JsonProperty("sessionState") SessionState sessionState) {
+                      @JsonProperty("sessionState") SessionState sessionState,
+                      @JsonProperty("inputMode") String inputMode,
+                      @JsonProperty("sessionId") String sessionId) {
         this.bot = bot;
         this.inputTranscript = inputTranscript;
         this.invocationSource = invocationSource;
         this.messageVersion = messageVersion;
         this.sessionState = sessionState;
-        
+        this.inputMode = inputMode;
+        this.sessionId = sessionId;
     }
 
     public static LexRequest fromJson(byte[] requestJson) throws Exception {
@@ -83,6 +88,30 @@ public class LexRequest {
 
     public SessionState getSessionState() {
         return sessionState;
+    }
+
+    /**
+     * @return the inputMode
+     */
+    public String getInputMode() {
+        return inputMode;
+    }
+
+
+    /**
+     * @return the sessionId
+     */
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    
+    /**
+     * The CustomerNumber attribute from Connect, or null if lex text input
+     * @return 
+     */
+    public String getPhoneNumber() {
+        return getSessionState().getSessionAttribute("CustomerNumber");
     }
 
 }

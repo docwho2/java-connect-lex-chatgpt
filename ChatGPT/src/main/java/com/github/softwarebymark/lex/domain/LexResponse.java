@@ -42,6 +42,14 @@ public class LexResponse {
         this.messages = List.of(new Message(message));
     }
 
+    public LexResponse(LexRequest request, DialogAction dialogAction, String message) {
+        this.sessionState = new SessionStateResponse(dialogAction,request.getSessionState().getIntent());
+        this.sessionState.setSessionAttributes(request.getSessionState().getSessionAttributes());
+        this.messages = List.of(new Message(message));
+    }
+
+    
+    
     public byte[] toJson() throws Exception {
         return OBJECT_MAPPER.writeValueAsBytes(this);
     }

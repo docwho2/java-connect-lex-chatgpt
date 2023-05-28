@@ -3,7 +3,7 @@
     <Appenders>
     <Lambda name="Lambda">
       <PatternLayout>
-          <pattern>%X{AWSRequestId} %-5p %c{1} - %m%n</pattern>
+          <pattern>%X{AWSRequestId} %-5p %c{1}:%L - %m%n</pattern>
       </PatternLayout>
     </Lambda>
   </Appenders>
@@ -17,9 +17,9 @@
         
         <Logger name="software.amazon.lambda.powertools" level="DEBUG"/>
 
-        <Logger name="software.amazon.awssdk" level="DEBUG"/>
+        <Logger name="software.amazon.awssdk" level="INFO"/>
            
-        <Logger name="software.amazon.awssdk.request" level="DEBUG"/>
+        <Logger name="software.amazon.awssdk.request" level="INFO"/>
           
         <Logger name="org.jooq" level="DEBUG"/>
             
