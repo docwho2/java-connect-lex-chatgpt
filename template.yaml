@@ -243,6 +243,20 @@ Resources:
               ParentIntentSignature: "AMAZON.FallbackIntent"
               FulfillmentCodeHook:
                   Enabled: true
+              InitialResponseSetting:
+                  InitialResponse:
+                      AllowInterrupt: false
+                      MessageGroupsList:
+                          - Message:
+                              PlainTextMessage:
+                                Value: Thinking
+                            Variations:
+                              - PlainTextMessage:
+                                  Value: Working
+                              - PlainTextMessage:
+                                  Value: Processing
+                          
+                      
                   
           
           
