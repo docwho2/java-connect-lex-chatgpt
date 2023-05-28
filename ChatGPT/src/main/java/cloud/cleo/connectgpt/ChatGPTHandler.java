@@ -64,11 +64,12 @@ public class ChatGPTHandler extends AbstractLexRequestHandler {
         } catch (Exception e) {
             log.error(e);
 
-            return createCloseDialogActionResponse(FulfillmentState.Failed, "Sorry, I'm having a problem fulfilling your request.  Chat GPT might be down, Please try again later.",
-                    new Intent(lexRequest.getSessionState().getIntent(), FulfillmentState.Failed));
+            return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
+                    "Sorry, I'm having a problem fulfilling your request.  Chat GPT might be down, Please try again later.");
         }
-        return createCloseDialogActionResponse(FulfillmentState.Failed, "Could Not match any intents",
-                new Intent(lexRequest.getSessionState().getIntent(), FulfillmentState.Failed));
+        
+        return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
+                    "Could Not match any intents.");
     }
 
     private LexResponse processGPT(LexRequest lexRequest) {
@@ -76,9 +77,10 @@ public class ChatGPTHandler extends AbstractLexRequestHandler {
         final var input = lexRequest.getInputTranscript();
         
         if ( input == null || input.isBlank() ) {
+            log.debug("Got blank input, so just silent or nothing");
             // If we get slience (timeout without speech), then we get empty string on the intent
-            return createCloseDialogActionResponse(FulfillmentState.Fulfilled, "I'm sorry, I didn't catch that, if your done, simply say good by, otherwise tell me how I can help",
-                new Intent(lexRequest.getSessionState().getIntent(), FulfillmentState.Fulfilled));
+            return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
+                    "I'm sorry, I didn't catch that, if your done, simply say good by, otherwise tell me how I can help");
         }
         
         
@@ -104,6 +106,8 @@ public class ChatGPTHandler extends AbstractLexRequestHandler {
                 .messages(session.getChatMessages())
                 .model(OPENAI_MODEL)
                 .maxTokens(500)
+                .temperature(0.2)  // More focused
+                .n(1)  // Only return 1 completion
                 .build();
 
         log.debug("Start API Call to ChatGPT");
@@ -118,6 +122,7 @@ public class ChatGPTHandler extends AbstractLexRequestHandler {
 
         // Save the session to dynamo
         log.debug("Start Saving Session State");
+        session.incrementCounter();
         sessionState.putItem(session);
         log.debug("End Saving Session State");
 
