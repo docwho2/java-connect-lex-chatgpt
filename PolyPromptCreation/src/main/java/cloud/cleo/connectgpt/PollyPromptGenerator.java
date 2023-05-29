@@ -26,7 +26,6 @@ import software.amazon.awssdk.services.polly.model.Engine;
 import software.amazon.awssdk.services.polly.model.OutputFormat;
 import software.amazon.awssdk.services.polly.model.SynthesizeSpeechRequest;
 import software.amazon.awssdk.services.polly.model.TextType;
-import software.amazon.awssdk.services.polly.model.VoiceId;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -64,10 +63,11 @@ public class PollyPromptGenerator extends AbstractCustomResourceHandler {
         try {
             final var name = cfcre.getResourceProperties().get("PromptName").toString();
             final var text = cfcre.getResourceProperties().get("PromptText").toString();
+            final var voice_id = cfcre.getResourceProperties().get("VoiceId").toString();
 
             final var ssr = SynthesizeSpeechRequest.builder()
                     .engine(Engine.NEURAL)
-                    .voiceId(VoiceId.JOANNA)
+                    .voiceId(voice_id)
                     .sampleRate("8000")
                     .outputFormat(OutputFormat.PCM)
                     .textType(TextType.TEXT)
@@ -75,6 +75,7 @@ public class PollyPromptGenerator extends AbstractCustomResourceHandler {
 
             final var por = PutObjectRequest.builder()
                     .bucket(BUCKET_NAME)
+                    //.contentType("audio/wav")
                     .key(name)
                     .build();
 
@@ -91,7 +92,7 @@ public class PollyPromptGenerator extends AbstractCustomResourceHandler {
             final var pollyFile = Path.of("/tmp", "polly_audio.pcm");
             
             // Name of temp for outout of sox
-            final var wavFile = Path.of("/tmp", name);
+            final var wavFile = Path.of("/tmp", name );
             
             // Take the Polly output and write to temp file
             Files.copy(polly.synthesizeSpeech(ssr), pollyFile, StandardCopyOption.REPLACE_EXISTING);

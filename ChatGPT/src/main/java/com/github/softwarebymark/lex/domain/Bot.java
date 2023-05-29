@@ -28,13 +28,16 @@ public class Bot {
     private String name;
     private String alias;
     private String version;
+    private String localeId;
 
     public Bot(@JsonProperty("name") String name,
                @JsonProperty("aliasName") String alias,
-               @JsonProperty("version") String version) {
+               @JsonProperty("version") String version,
+               @JsonProperty("localeId") String localeId) {
         this.name = name;
         this.alias = alias;
         this.version = version;
+        this.localeId = localeId;
     }
 
     public String getName() {
@@ -47,5 +50,9 @@ public class Bot {
 
     public String getVersion() {
         return version;
+    }
+    
+    public String getLocalId() {
+        return localeId;
     }
 }

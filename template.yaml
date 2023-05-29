@@ -12,16 +12,39 @@ Parameters:
     Description: OpenAI Key stored in parameter store
     Type: AWS::SSM::Parameter::Value<String>
     Default: OPENAI_API_KEY
+  VOICEIDEN:
+    Description: The voice used for LEX and prompt generation for English
+    Type: String
+    Default: Joanna
+    AllowedValues:
+        - Ivy      # Female (child)
+        - Joanna   # Female
+        - Kendra   # Female
+        - Kimberly # Female
+        - Salli    # Female
+        - Joey     # Male
+        - Justin   # Male (child)
+        - Kevin    # Male (child)
+        - Matthew  # Male
+        - Ruth     # Female
+        - Stephen  # Male
+  VOICEIDES:
+    Description: The voice used for LEX and prompt generation for Spanish
+    Type: String
+    Default: Lupe
+    AllowedValues:
+        - Mia      # Female (Mexican)
+        - Andrés   # Male (Mexican)
+        - Lupe     # Female (US)
+        - Pedro    # Male (US)
+       
 
 Globals:
   Function:
-    Environment: 
-      Variables:
-        JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
     Runtime: java11
     Timeout: 30
     MemorySize: 3009
-    Architectures:  # Snap on Java 11 requires x86
+    Architectures:  # SnapStart on Java 11 requires x86
         - x86_64
 
 Resources:
@@ -135,33 +158,105 @@ Resources:
     Type: Custom::PromptCreator
     Properties:
         ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDEN
         PromptName: main.wav
         PromptText: |
-            Welcome to CLEO Cloud Solutions, thank you for calling.  You may ask Chat GPT anything you wish.
+            Welcome to CLEO Cloud Solutions, thank you for calling.
 
-  ClosingPrompt:
+  SpanishPrompt:
     Type: Custom::PromptCreator
     Properties:
         ServiceToken: !GetAtt PromptCreator.Arn
-        PromptName: closing.wav
-        PromptText: Thank you for calling, good bye
-            
-  ThinkingPrompt:
+        VoiceId: !Ref VOICEIDES
+        PromptName: spanish.wav
+        PromptText: |
+            Para español, marca dos.
+
+  LexPromptEnglish:
     Type: Custom::PromptCreator
     Properties:
         ServiceToken: !GetAtt PromptCreator.Arn
-        PromptName: thinking.wav
-        PromptText: Thinking
+        VoiceId: !Ref VOICEIDEN
+        PromptName: lex_en-US_.wav
+        PromptText: How can I help today?
+
+  LexPromptSpanish:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDES
+        PromptName: lex_es-US_.wav
+        PromptText: ¿Cómo puedo ayudar hoy?
         
-  HelpPrompt:
+  TransferPromptEnglish:
     Type: Custom::PromptCreator
     Properties:
         ServiceToken: !GetAtt PromptCreator.Arn
-        PromptName: help.wav
+        VoiceId: !Ref VOICEIDEN
+        PromptName: transfer_en-US_.wav
+        PromptText: Transferring to Steve Jensen
+
+  TransferPromptSpanish:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDES
+        PromptName: transfer_es-US_.wav
+        PromptText: Transferencia a Esteban Jensen
+        
+  ErrorPromptEnglish:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDEN
+        PromptName: error_en-US_.wav
+        PromptText: I'm sorry there is an error calling the Bot, please try again later
+
+  ErrorPromptSpanish:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDES
+        PromptName: error_es-US_.wav
+        PromptText: Lo siento, hay un error al llamar al Bot, inténtalo de nuevo más tarde.
+        
+  ClosingPromptEnglish:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDEN
+        PromptName: closing_en-US_.wav
+        PromptText: Thank you for calling, good bye
+        
+  ClosingPromptSpanish:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDES
+        PromptName: closing_es-US_.wav
+        PromptText: Gracias por llamar, adiós.
+        
+  HelpPromptEnglish:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDEN
+        PromptName: help_en-US_.wav
         PromptText: !
             This is a combined LEX and ChatGPT model.  
             You can ask for Steve and the call will be transferred, say good bye, or phrase any question for Chat GPT.
             Your context will be maintained between calls for each day, so you can hang up, call back, and you will not lose context.
+            
+  HelpPromptSpanish:
+    Type: Custom::PromptCreator
+    Properties:
+        ServiceToken: !GetAtt PromptCreator.Arn
+        VoiceId: !Ref VOICEIDES
+        PromptName: help_es-US_.wav
+        PromptText: !
+            Este es un modelo combinado de LEX y ChatGPT.
+            Puede preguntar por Esteban y la llamada se transferirá, decir adiós o formular cualquier pregunta para Chat GPT.
+            Su contexto se mantendrá entre las llamadas de cada día, por lo que puede colgar, volver a llamar y no perderá el contexto.
             
             
   BotRuntimeRole:
@@ -189,11 +284,11 @@ Resources:
                   - "lambda:invokeFunction"
                 Resource: "*"
                 
-  LexBot:
+  LexBotEnglish:
     Type: AWS::Lex::Bot
     Properties:
-      Name: MyLexBot
-      Description: ChatGPT Bot
+      Name: !Sub ${AWS::StackName}-Lex-Bot
+      Description: ChatGPT Bot 
       RoleArn: !GetAtt BotRuntimeRole.Arn
       DataPrivacy:
         ChildDirected: false
@@ -201,10 +296,10 @@ Resources:
       IdleSessionTTLInSeconds: 300
       BotLocales:
         - LocaleId: en_US
-          Description: ChatGPT Bot
+          Description: ChatGPT Bot English
           NluConfidenceThreshold: 0.40
           VoiceSettings:
-            VoiceId: "Joanna"
+            VoiceId: !Ref VOICEIDEN
           Intents:
             - Name: "About"
               Description: "Play a help prompt"
@@ -254,28 +349,81 @@ Resources:
                               - PlainTextMessage:
                                   Value: Working
                               - PlainTextMessage:
-                                  Value: Processing
-                          
-                      
-                  
+                                  Value: Processing                
+        - LocaleId: es_US
+          Description: ChatGPT Bot Spanish
+          NluConfidenceThreshold: 0.40
+          VoiceSettings:
+            VoiceId: !Ref VOICEIDES
+          Intents:
+            - Name: "About"
+              Description: "Play a help prompt"
+              SampleUtterances:
+                - Utterance: "Estoy confundida"
+                - Utterance: "ayuda"
+                - Utterance: "¿Qué puede hacer esto?"
+                - Utterance: "qué puedo decir"
+                - Utterance: "dame algunos ejemplos"
+                - Utterance: "Ayudame aqui"
+                - Utterance: "necesito ayuda"
+            - Name: "Quit"
+              Description: "Hang Up the call"
+              SampleUtterances:
+                - Utterance: "abandonar"
+                - Utterance: "He terminado"
+                - Utterance: "adiós"
+                - Utterance: "Hablaré contigo más tarde"
+                - Utterance: "salida"
+            - Name: "Steve"
+              Description: "Send Call to Steve"
+              SampleUtterances:
+                - Utterance: "Steve"
+                - Utterance: "Esteban"
+                - Utterance: "Steve Jensen"
+                - Utterance: "Esteban Jensen"
+                - Utterance: "quiero hablar con Steve"
+                - Utterance: "quiero hablar con Esteban"
+                - Utterance: "quiero hablar con Steve Jensen"
+                - Utterance: "quiero hablar con Esteban Jensen"
+                - Utterance: "hablar con alguien"
+                - Utterance: "hablar con una persona"
+            - Name: "FallbackIntent"
+              Description: "Default intent when no other intent matches, send to GPT"
+              ParentIntentSignature: "AMAZON.FallbackIntent"
+              FulfillmentCodeHook:
+                  Enabled: true
+              InitialResponseSetting:
+                  InitialResponse:
+                      AllowInterrupt: false
+                      MessageGroupsList:
+                          - Message:
+                              PlainTextMessage:
+                                Value: Pensamiento
+                            Variations:
+                              - PlainTextMessage:
+                                  Value: trabajador
+                              - PlainTextMessage:
+                                  Value: "la transformación"  
           
-          
-  BotVersion:
+  BotVersionEnglish:
     Type: AWS::Lex::BotVersion
     Properties:
-      BotId: !Ref LexBot
+      BotId: !Ref LexBotEnglish
       BotVersionLocaleSpecification:
         - LocaleId: en_US
           BotVersionLocaleDetails:
             SourceBotVersion: DRAFT
-      Description: ChatGPT Bot
+        - LocaleId: es_US
+          BotVersionLocaleDetails:
+            SourceBotVersion: DRAFT
+      Description: ChatGPT Bot English
       
-  FirstBotAliasWithCFN:
+  BotAliasEnglish:
     Type: AWS::Lex::BotAlias
     Properties:
-      BotId: !Ref LexBot
+      BotId: !Ref LexBotEnglish
       BotAliasName: "Latest"
-      BotVersion: !GetAtt BotVersion.BotVersion
+      BotVersion: !GetAtt BotVersionEnglish.BotVersion
       SentimentAnalysisSettings:
         DetectSentiment: false
       BotAliasLocaleSettings:
@@ -286,15 +434,21 @@ Resources:
               LambdaCodeHook:
                 CodeHookInterfaceVersion: "1.0"
                 LambdaArn: !Ref ChatGPT.Alias
+        - LocaleId: es_US
+          BotAliasLocaleSetting:
+            Enabled: true
+            CodeHookSpecification:
+              LambdaCodeHook:
+                CodeHookInterfaceVersion: "1.0"
+                LambdaArn: !Ref ChatGPT.Alias
         
-  LexV2ConnectIntegration:
+  LexV2ConnectIntegrationEnglish:
     Type: AWS::Connect::IntegrationAssociation
     Properties:
       InstanceId: !Ref CONNECTARN
       IntegrationType: LEX_BOT
-      IntegrationArn: !GetAtt FirstBotAliasWithCFN.Arn
+      IntegrationArn: !GetAtt BotAliasEnglish.Arn
       
-  
   NewCallTopic:
         Type: AWS::SNS::Topic
         Properties:

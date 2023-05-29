@@ -113,5 +113,14 @@ public class LexRequest {
     public String getPhoneNumber() {
         return getSessionState().getSessionAttribute("CustomerNumber");
     }
+    
+    /**
+     * The bot locale ID so we know if it's en_US or es_US for example
+     * Spanish vs English
+     * @return 
+     */
+    public String getLocaleId() {
+        return getBot().getLocalId();
+    }
 
 }

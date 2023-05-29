@@ -31,11 +31,16 @@ public class SessionState {
     public SessionState() {
     }
 
-    public SessionState(String phoneNumber, LocalDate date) {
+    public SessionState(String phoneNumber, LocalDate date, String localeId) {
         this.phoneNumber = phoneNumber;
         this.date = date;
         this.messages = new LinkedList<>();
         this.messages.add(new ChatGPTMessage(ChatGPTMessage.MessageRole.system, "I am interacting via a telephone interface.  please keep answers short and concise"));
+        
+        if ( localeId != null && localeId.startsWith("es_") ) {
+            this.messages.add(new ChatGPTMessage(ChatGPTMessage.MessageRole.system, "Please respond in Spanish for all prompts"));
+        }
+
         // Expire entries after 60 days
         this.ttl = Instant.now().plus(Duration.ofDays(60)).getEpochSecond();
         this.counter = 0L;

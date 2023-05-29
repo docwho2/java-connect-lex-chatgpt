@@ -13,6 +13,7 @@ import com.github.softwarebymark.lex.domain.LexResponse;
 import com.github.softwarebymark.lex.domain.action.CloseDialogAction;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.service.OpenAiService;
+import java.net.SocketTimeoutException;
 import java.time.LocalDate;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -64,26 +65,37 @@ public class ChatGPTHandler extends AbstractLexRequestHandler {
         } catch (Exception e) {
             log.error(e);
 
-            return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
-                    "Sorry, I'm having a problem fulfilling your request.  Chat GPT might be down, Please try again later.");
+            if ("es_US".equalsIgnoreCase(lexRequest.getLocaleId())) {
+                return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
+                        "Lo siento, tengo un problema para cumplir con su solicitud. Es posible que el chat GPT esté inactivo. Vuelva a intentarlo más tarde.");
+            } else {
+                return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
+                        "Sorry, I'm having a problem fulfilling your request.  Chat GPT might be down, Please try again later.");
+            }
         }
-        
+
         return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
-                    "Could Not match any intents.");
+                "Could Not match any intents.");
     }
 
     private LexResponse processGPT(LexRequest lexRequest) {
 
         final var input = lexRequest.getInputTranscript();
+
+        log.debug("Language is [" + lexRequest.getLocaleId()+ "]" );
         
-        if ( input == null || input.isBlank() ) {
+        if (input == null || input.isBlank()) {
             log.debug("Got blank input, so just silent or nothing");
             // If we get slience (timeout without speech), then we get empty string on the intent
-            return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
-                    "I'm sorry, I didn't catch that, if your done, simply say good by, otherwise tell me how I can help");
+            if ("es_US".equalsIgnoreCase(lexRequest.getLocaleId())) {
+                return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
+                        "Lo siento, no entendí eso, si terminaste, simplemente dime adiós, de lo contrario, dime cómo puedo ayudarte.");
+            } else {
+                return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled),
+                        "I'm sorry, I didn't catch that, if your done, simply say good by, otherwise tell me how I can help");
+            }
         }
-        
-        
+
         // When testing in lex console input will be text, so use session ID, for speech we shoud have a phone via Connect
         final var user_id = "Text".equalsIgnoreCase(lexRequest.getInputMode()) ? lexRequest.getSessionId() : lexRequest.getPhoneNumber();
 
@@ -96,39 +108,53 @@ public class ChatGPTHandler extends AbstractLexRequestHandler {
         log.debug("End Retreiving Session State");
 
         if (session == null) {
-            session = new SessionState(user_id, LocalDate.now());
+            session = new SessionState(user_id, LocalDate.now(), lexRequest.getLocaleId());
         }
 
         // add this request to the session
         session.addUserMessage(input);
 
-        ChatCompletionRequest request = ChatCompletionRequest.builder()
-                .messages(session.getChatMessages())
-                .model(OPENAI_MODEL)
-                .maxTokens(500)
-                .temperature(0.2)  // More focused
-                .n(1)  // Only return 1 completion
-                .build();
+        String botResponse;
+        try {
 
-        log.debug("Start API Call to ChatGPT");
-        final var completion = open_ai_service.createChatCompletion(request);
-        log.debug("End API Call to ChatGPT");
-        log.debug(completion);
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .messages(session.getChatMessages())
+                    .model(OPENAI_MODEL)
+                    .maxTokens(500)
+                    .temperature(0.2) // More focused
+                    .n(1) // Only return 1 completion
+                    .build();
 
-        final var botResponse = completion.getChoices().get(0).getMessage().getContent();
+            log.debug("Start API Call to ChatGPT");
+            final var completion = open_ai_service.createChatCompletion(request);
+            log.debug("End API Call to ChatGPT");
+            log.debug(completion);
 
-        // Add response to session
-        session.addAssistantMessage(botResponse);
+            botResponse = completion.getChoices().get(0).getMessage().getContent();
 
-        // Save the session to dynamo
-        log.debug("Start Saving Session State");
-        session.incrementCounter();
-        sessionState.putItem(session);
-        log.debug("End Saving Session State");
+            // Add response to session
+            session.addAssistantMessage(botResponse);
+
+            // Save the session to dynamo
+            log.debug("Start Saving Session State");
+            session.incrementCounter();
+            sessionState.putItem(session);
+            log.debug("End Saving Session State");
+        } catch (RuntimeException rte) {
+            if (rte.getCause() != null && rte.getCause() instanceof SocketTimeoutException) {
+                log.error("Response times out", rte);
+                if ("es_US".equalsIgnoreCase(lexRequest.getLocaleId())) {
+                    botResponse = "Se agotó el tiempo de espera de la operación, vuelva a hacer su pregunta";
+                } else {
+                    botResponse = "The operation timed out, please ask your question again";
+                }
+            } else {
+                throw rte;
+            }
+        }
 
         return new LexResponse(lexRequest, new CloseDialogAction(FulfillmentState.Fulfilled), botResponse);
-        //return createCloseDialogActionResponse(FulfillmentState.Fulfilled, botResponse,
-        //        new Intent(lexRequest.getSessionState().getIntent(), FulfillmentState.Fulfilled));
+
     }
 
 }
