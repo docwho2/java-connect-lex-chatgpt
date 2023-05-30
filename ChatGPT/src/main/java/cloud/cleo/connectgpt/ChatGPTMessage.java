@@ -7,7 +7,7 @@ package cloud.cleo.connectgpt;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 
 /**
- * Our representation of a ChatGPT Message to be store in Dynamo DB
+ * Our representation of a ChatGPT Message to be stored in Dynamo DB
  *
  * @author sjensen
  */

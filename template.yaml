@@ -515,16 +515,42 @@ Resources:
       CodeUri: ./NewCallLookup
       SnapStart:
         ApplyOn: PublishedVersions
-      AutoPublishAlias: SNAP
-      DeploymentPreference:
-        Type: AllAtOnce
+      AutoPublishAlias: SNAPSTART
+      Environment: 
+        Variables:
+          CALLS_TABLE_NAME: !Ref CallTable
       Policies: 
         - !Ref ContactUpdatePolicy
+        - DynamoDBReadPolicy:
+            TableName: !Ref CallTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref CallTable
       Events:
         SNSTrigger:
             Type: SNS
             Properties:
                 Topic: !Ref NewCallTopic
+                
+                
+  CallTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub ${AWS::StackName}-calls
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: phoneNumber
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: phoneNumber
+          KeyType: HASH
+        - AttributeName: date
+          KeyType: RANGE
+      TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
                 
   ChatGPT:
     Type: AWS::Serverless::Function
@@ -542,7 +568,6 @@ Resources:
       SnapStart:
         ApplyOn: PublishedVersions
       Policies: 
-        - !Ref ContactUpdatePolicy
         - DynamoDBReadPolicy:
             TableName: !Ref SessionTable
         - DynamoDBWritePolicy:

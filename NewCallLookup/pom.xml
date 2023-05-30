@@ -55,25 +55,16 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>connect</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>software.amazon.awssdk</groupId>
-                    <artifactId>netty-nio-client</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>dynamodb-enhanced</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>software.amazon.awssdk</groupId>
-                    <artifactId>netty-nio-client</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
+
     </dependencies>
+
+    
 
     <build>
         <plugins>
