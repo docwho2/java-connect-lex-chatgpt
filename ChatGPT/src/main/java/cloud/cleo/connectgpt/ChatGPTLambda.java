@@ -33,7 +33,7 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
 
     // Initialize the Log4j logger.
     Logger log = LogManager.getLogger();
-    
+
     final static ObjectMapper mapper = new ObjectMapper();
 
     final static TableSchema<ChatGPTSessionState> schema = TableSchema.fromBean(ChatGPTSessionState.class);
@@ -97,6 +97,12 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
             session = new ChatGPTSessionState(user_id, localId);
         }
 
+        // Since we can call and change language during session, always specifiy how we want responses
+        if ("es_US".equalsIgnoreCase(localId)) {
+            session.addMessage(new ChatGPTMessage.SpanishSystemMessage());
+        } else {
+            session.addMessage(new ChatGPTMessage.EnglishSystemMessage());
+        }
         // add this request to the session
         session.addUserMessage(input);
 
@@ -152,10 +158,10 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
     private LexV2Response buildResponse(LexV2Event lexRequest, String response) {
         // Start with Orginal State
         final var os = lexRequest.getSessionState();
-        
+
         // Incoming Intent
         final var requestIntent = os.getIntent();
-        
+
         // State to return
         final var ss = SessionState.builder()
                 // Retain the current session attributes
@@ -165,7 +171,7 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
                 // Always ElictIntent, so you're back at the LEX Bot fresh again
                 .withDialogAction(DialogAction.builder().withType("ElicitIntent").build())
                 .build();
-        
+
         final var lexV2Res = LexV2Response.builder()
                 .withSessionState(ss)
                 // We are using plain text responses

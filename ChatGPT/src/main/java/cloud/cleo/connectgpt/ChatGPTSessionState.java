@@ -37,10 +37,6 @@ public class ChatGPTSessionState {
         this.date = LocalDate.now(ZoneId.of("America/Chicago"));
         this.messages = new LinkedList<>();
         this.messages.add(new ChatGPTMessage(ChatGPTMessage.MessageRole.system, "I am interacting via a telephone interface.  please keep answers short and concise"));
-        
-        if ( localeId != null && localeId.startsWith("es_") ) {
-            this.messages.add(new ChatGPTMessage(ChatGPTMessage.MessageRole.system, "Please respond in Spanish for all prompts"));
-        }
 
         // Expire entries after 60 days
         this.ttl = Instant.now().plus(Duration.ofDays(60)).getEpochSecond();
@@ -93,6 +89,10 @@ public class ChatGPTSessionState {
 
     public void addUserMessage(String message) {
         messages.add(new ChatGPTMessage(ChatGPTMessage.MessageRole.user, message));
+    }
+    
+    public void addMessage(ChatGPTMessage message) {
+        messages.add(message);
     }
 
     public void addAssistantMessage(String message) {
