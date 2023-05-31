@@ -37,6 +37,14 @@ Parameters:
         - Andrés   # Male (Mexican)
         - Lupe     # Female (US)
         - Pedro    # Male (US)
+  NAMEENGLISH:
+    Description: First Name for transferring calls to in English
+    Type: String
+    Default: Steve
+  NAMESPANISH:
+    Description: First Name for transferring calls to in Spanish
+    Type: String
+    Default: Esteban
        
 
 Globals:
@@ -194,7 +202,7 @@ Resources:
         ServiceToken: !GetAtt PromptCreator.Arn
         VoiceId: !Ref VOICEIDEN
         PromptName: transfer_en-US_.wav
-        PromptText: Transferring to Steve Jensen
+        PromptText: !Sub Transferring to ${NAMEENGLISH}
 
   TransferPromptSpanish:
     Type: Custom::PromptCreator
@@ -202,7 +210,7 @@ Resources:
         ServiceToken: !GetAtt PromptCreator.Arn
         VoiceId: !Ref VOICEIDES
         PromptName: transfer_es-US_.wav
-        PromptText: Transferencia a Esteban Jensen
+        PromptText: !Sub Transferencia a ${NAMESPANISH}
         
   ErrorPromptEnglish:
     Type: Custom::PromptCreator
@@ -242,9 +250,9 @@ Resources:
         ServiceToken: !GetAtt PromptCreator.Arn
         VoiceId: !Ref VOICEIDEN
         PromptName: help_en-US_.wav
-        PromptText: !
+        PromptText: !Sub |
             This is a combined LEX and ChatGPT model.  
-            You can ask for Steve and the call will be transferred, say good bye, or phrase any question for Chat GPT.
+            You can ask for ${NAMEENGLISH} and the call will be transferred, say good bye, or phrase any question for Chat GPT.
             Your context will be maintained between calls for each day, so you can hang up, call back, and you will not lose context.
             
   HelpPromptSpanish:
@@ -253,9 +261,9 @@ Resources:
         ServiceToken: !GetAtt PromptCreator.Arn
         VoiceId: !Ref VOICEIDES
         PromptName: help_es-US_.wav
-        PromptText: !
+        PromptText: !Sub |
             Este es un modelo combinado de LEX y ChatGPT.
-            Puede preguntar por Esteban y la llamada se transferirá, decir adiós o formular cualquier pregunta para Chat GPT.
+            Puede preguntar por ${NAMESPANISH} y la llamada se transferirá, decir adiós o formular cualquier pregunta para Chat GPT.
             Su contexto se mantendrá entre las llamadas de cada día, por lo que puede colgar, volver a llamar y no perderá el contexto.
             
             
@@ -321,18 +329,15 @@ Resources:
                 - Utterance: "see ya"
                 - Utterance: "later"
                 - Utterance: "exit"
-            - Name: "Steve"
-              Description: "Send Call to Steve"
+            - Name: !Ref NAMEENGLISH
+              Description: !Sub "Send Call to ${NAMEENGLISH}"
               SampleUtterances:
-                - Utterance: "Steve"
-                - Utterance: "Steve Jensen"
-                - Utterance: "I want to talk with Steve"
-                - Utterance: "I want to talk with Steve Jensen"
+                - Utterance: !Sub "${NAMEENGLISH}"
+                - Utterance: !Sub "I want to talk with ${NAMEENGLISH}"
                 - Utterance: "speak with someone"
                 - Utterance: "talk to someone"
                 - Utterance: "speak with a person"
-                - Utterance: "connect with Steve"
-                - Utterance: "connect with Steve Jensen"
+                - Utterance: !Sub "connect with ${NAMEENGLISH}"
             - Name: "FallbackIntent"
               Description: "Default intent when no other intent matches, send to GPT"
               ParentIntentSignature: "AMAZON.FallbackIntent"
@@ -374,17 +379,14 @@ Resources:
                 - Utterance: "adiós"
                 - Utterance: "Hablaré contigo más tarde"
                 - Utterance: "salida"
-            - Name: "Steve"
-              Description: "Send Call to Steve"
+                - Utterance: "gracias"
+            - Name: !Ref NAMEENGLISH
+              Description: !Sub "Send Call to ${NAMEENGLISH}"
               SampleUtterances:
-                - Utterance: "Steve"
-                - Utterance: "Esteban"
-                - Utterance: "Steve Jensen"
-                - Utterance: "Esteban Jensen"
-                - Utterance: "quiero hablar con Steve"
-                - Utterance: "quiero hablar con Esteban"
-                - Utterance: "quiero hablar con Steve Jensen"
-                - Utterance: "quiero hablar con Esteban Jensen"
+                - Utterance: !Sub "${NAMEENGLISH}"
+                - Utterance: !Sub "${NAMESPANISH}"
+                - Utterance: !Sub "quiero hablar con ${NAMEENGLISH}"
+                - Utterance: !Sub "quiero hablar con ${NAMESPANISH}"
                 - Utterance: "hablar con alguien"
                 - Utterance: "hablar con una persona"
             - Name: "FallbackIntent"
