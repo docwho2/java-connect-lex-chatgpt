@@ -32,7 +32,7 @@ public class ChatGPTSessionState {
     public ChatGPTSessionState() {
     }
 
-    public ChatGPTSessionState(String phoneNumber, String localeId) {
+    public ChatGPTSessionState(String phoneNumber) {
         this.phoneNumber = phoneNumber;
         this.date = LocalDate.now(ZoneId.of("America/Chicago"));
         this.messages = new LinkedList<>();
@@ -91,8 +91,8 @@ public class ChatGPTSessionState {
         messages.add(new ChatGPTMessage(ChatGPTMessage.MessageRole.user, message));
     }
     
-    public void addMessage(ChatGPTMessage message) {
-        messages.add(message);
+    public void addSystemMessage(String message) {
+        messages.add(new ChatGPTMessage(ChatGPTMessage.MessageRole.system, message));
     }
 
     public void addAssistantMessage(String message) {

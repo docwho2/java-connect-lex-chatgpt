@@ -4,6 +4,8 @@
  */
 package cloud.cleo.connectgpt;
 
+import cloud.cleo.connectgpt.lang.LangUtil;
+import static cloud.cleo.connectgpt.lang.LangUtil.LanguageIds.*;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.LexV2Event;
@@ -56,11 +58,7 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
         } catch (Exception e) {
             log.error(e);
             // Unhandled Exception
-            if ("es_US".equalsIgnoreCase(lexRequest.getBot().getLocaleId())) {
-                return buildResponse(lexRequest, "Lo siento, tengo un problema para cumplir con su solicitud. Es posible que el chat GPT esté inactivo. Vuelva a intentarlo más tarde.");
-            } else {
-                return buildResponse(lexRequest, "Sorry, I'm having a problem fulfilling your request.  Chat GPT might be down, Please try again later.");
-            }
+            return buildResponse(lexRequest, new LangUtil(lexRequest.getBot().getLocaleId()).getString(UNHANDLED_EXCEPTION));
         }
     }
 
@@ -69,15 +67,24 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
         final var input = lexRequest.getInputTranscript();
         final var localId = lexRequest.getBot().getLocaleId();
 
-        log.debug("Language is [" + localId + "]");
+        final var lang = new LangUtil(localId);
+        log.debug("Java Locale is " + lang.getLocale());
 
         if (input == null || input.isBlank()) {
             log.debug("Got blank input, so just silent or nothing");
-            // If we get slience (timeout without speech), then we get empty string on the transcripp
-            if ("es_US".equalsIgnoreCase(localId)) {
-                return buildResponse(lexRequest, "Lo siento, no entendí eso, si terminaste, simplemente dime adiós, de lo contrario, dime cómo puedo ayudarte.");
+
+            final var attrs = lexRequest.getSessionState().getSessionAttributes();
+            var count = Integer.valueOf(attrs.getOrDefault("blankCounter", "0"));
+            count++;
+
+            if (count > 2) {
+                log.debug("Two blank responses, sending to Quit Intent");
+                // Hang up on caller after 2 silience requests
+                return buildQuitResponse(lexRequest);
             } else {
-                return buildResponse(lexRequest, "I'm sorry, I didn't catch that, if your done, simply say good by, otherwise tell me how I can help");
+                attrs.put("blankCounter", count.toString());
+                // If we get slience (timeout without speech), then we get empty string on the transcript
+                return buildResponse(lexRequest, lang.getString(BLANK_RESPONSE));
             }
         }
 
@@ -94,15 +101,12 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
         log.debug("End Retreiving Session State");
 
         if (session == null) {
-            session = new ChatGPTSessionState(user_id, localId);
+            session = new ChatGPTSessionState(user_id);
         }
 
         // Since we can call and change language during session, always specifiy how we want responses
-        if ("es_US".equalsIgnoreCase(localId)) {
-            session.addMessage(new ChatGPTMessage.SpanishSystemMessage());
-        } else {
-            session.addMessage(new ChatGPTMessage.EnglishSystemMessage());
-        }
+        session.addSystemMessage(lang.getString(CHATGPT_RESPONSE_LANGUAGE));
+       
         // add this request to the session
         session.addUserMessage(input);
 
@@ -127,6 +131,9 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
             // Add response to session
             session.addAssistantMessage(botResponse);
 
+            // Since we have a valid response, add message asking if there is anything else
+            botResponse = botResponse + lang.getString(ANYTHING_ELSE);
+
             // Save the session to dynamo
             log.debug("Start Saving Session State");
             session.incrementCounter();
@@ -134,12 +141,8 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
             log.debug("End Saving Session State");
         } catch (RuntimeException rte) {
             if (rte.getCause() != null && rte.getCause() instanceof SocketTimeoutException) {
-                log.error("Response times out", rte);
-                if ("es_US".equalsIgnoreCase(localId)) {
-                    botResponse = "Se agotó el tiempo de espera de la operación, vuelva a hacer su pregunta";
-                } else {
-                    botResponse = "The operation timed out, please ask your question again";
-                }
+                log.error("Response timed out", rte);
+                    botResponse = lang.getString(OPERATION_TIMED_OUT);
             } else {
                 throw rte;
             }
@@ -149,26 +152,45 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
     }
 
     /**
-     * All responses are EllicitIntent with plain text
+     * Response that sends you to the Quit intent so the call can be ended
+     *
+     * @param lexRequest
+     * @param response
+     * @return
+     */
+    private LexV2Response buildQuitResponse(LexV2Event lexRequest) {
+
+        // State to return
+        final var ss = SessionState.builder()
+                // Retain the current session attributes
+                .withSessionAttributes(lexRequest.getSessionState().getSessionAttributes())
+                // Send back Quit Intent
+                .withIntent(Intent.builder().withName("Quit").withState("ReadyForFulfillment").build())
+                // Indicate the state is Delegate
+                .withDialogAction(DialogAction.builder().withType("Delegate").build())
+                .build();
+
+        final var lexV2Res = LexV2Response.builder()
+                .withSessionState(ss)
+                .build();
+        log.debug("Response is " + mapper.valueToTree(lexV2Res));
+        return lexV2Res;
+    }
+
+    /**
+     * General Response used to send back a message and Elicit Intent again at LEX
      *
      * @param lexRequest
      * @param response
      * @return
      */
     private LexV2Response buildResponse(LexV2Event lexRequest, String response) {
-        // Start with Orginal State
-        final var os = lexRequest.getSessionState();
-
-        // Incoming Intent
-        final var requestIntent = os.getIntent();
 
         // State to return
         final var ss = SessionState.builder()
                 // Retain the current session attributes
-                .withSessionAttributes(os.getSessionAttributes())
-                // Send back clean intent without any states
-                .withIntent(Intent.builder().withName(requestIntent.getName()).withSlots(requestIntent.getSlots()).build())
-                // Always ElictIntent, so you're back at the LEX Bot fresh again
+                .withSessionAttributes(lexRequest.getSessionState().getSessionAttributes())
+                // Always ElictIntent, so you're back at the LEX Bot looking for more input
                 .withDialogAction(DialogAction.builder().withType("ElicitIntent").build())
                 .build();
 

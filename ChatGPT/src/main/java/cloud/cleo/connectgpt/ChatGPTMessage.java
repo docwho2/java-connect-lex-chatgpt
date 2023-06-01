@@ -4,7 +4,6 @@
  */
 package cloud.cleo.connectgpt;
 
-import static cloud.cleo.connectgpt.ChatGPTMessage.MessageRole.system;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 
 /**
@@ -58,21 +57,5 @@ public class ChatGPTMessage {
      */
     public void setContent(String content) {
         this.content = content;
-    }
-
-    public static class EnglishSystemMessage extends ChatGPTMessage {
-
-        public EnglishSystemMessage() {
-            super(system, "Please respond to all prompts in English");
-        }
-
-    }
-
-    public static class SpanishSystemMessage extends ChatGPTMessage {
-
-        public SpanishSystemMessage() {
-            super(system, "Please respond to all prompts in Spanish");
-        }
-
     }
 }
