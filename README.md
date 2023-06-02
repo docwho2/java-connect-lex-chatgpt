@@ -23,6 +23,7 @@ Other goals of the project:
 - Nested Stacks.
 - To simply provide a full working example with Java and AWS RDS Postgres (what I use day to day).  The Demo on the AWS Website is MySQL with NodeJS and there was nothing I could find that really showed a full use case in Java.
 
+## High Level Architecture
 ![Architecture Diagram](arch.jpg)
 
 ## Contents
@@ -36,9 +37,10 @@ This project contains source code and supporting files for a serverless applicat
 	- [template.yaml](template.yaml) - Creates all the SAM lambda functions and associated AWS resources.
 
 
-## Deploy the Demo
+## Deploy the Project
 
-The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.  Before proceeding, it is assumed you have valid AWS credentials setup with the AWS CLI and permissions to perform CloudFormation stack operations.
+The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications.  
+Before proceeding, it is assumed you have valid AWS credentials setup with the AWS CLI and permissions to perform CloudFormation stack operations.
 
 To use the SAM CLI, you need the following tools.
 
@@ -56,16 +58,23 @@ brew install maven
 To build and deploy, run the following in your shell after you have cloned the repo:
 
 ```bash
-java-postgres-lambda-trigger$ sam build
-java-postgres-lambda-trigger$ sam deploy
+java-connect-lex-chatgpt$ ./init.bash
+java-connect-lex-chatgpt$ sam build
+java-connect-lex-chatgpt$ sam deploy
 ```
 
-The first command will build the source of the application. The second command will package and deploy the demo application to AWS.  You will see the progress as the stack deploys, be patient as it does take a while to spin up the Aurora Cluster and serverless postgres node. `Do not forget to delete the stack or you will continue to incure AWS charges for the DB`.  
+The first command will will setup some required components like the V4 Java Events library that is not published yet (this is a sub-module) and install the parent POM used by Lambda functions.
+The second command will build the source of the application. 
+The third command will package and deploy the project to AWS as a CloudFormation Stack.  
+You will see the progress as the stack deploys.
 
 
-You can find the API Gateway Endpoint URL in the output values displayed after deployment.  Open the URL with a web browser.
+`Do not forget to delete the stack or you will continue to incure AWS charges for the resources`.  
 
-## Play with the demo UI and observe the table entries
+
+
+
+## Associate Phone number to the Connect Flow and place calls in
 
 ![Demo User Interface](UI.png)
 
@@ -83,7 +92,7 @@ To simplify troubleshooting, SAM CLI has a command called `sam logs`. `sam logs`
 
 
 ```bash
-java-postgres-lambda-trigger$ sam logs --tail
+java-connect-lex-chatgpt$ sam logs --tail
 ```
 
 You can find more information and examples about filtering Lambda function logs in the [SAM CLI Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
@@ -91,39 +100,33 @@ You can find more information and examples about filtering Lambda function logs 
 
 ## Cleanup
 
-To delete the demo, use the SAM CLI. `DO NOT FORGET TO RUN THIS OR YOU WILL CONTINUE TO BE CHARGED FOR AWS RESOURCES` (Namely the Aurora Postgres Cluster Node).  You can run the following:
+To delete the demo, use the SAM CLI. `DO NOT FORGET TO RUN THIS OR YOU WILL CONTINUE TO BE CHARGED FOR AWS RESOURCES`.  
+Prior to deleting the stack, you should ensure you have disassociated any phone numbers pointing to the Connect Flow.
+
+You can run the following:
 
 ```bash
-java-postgres-lambda-trigger$ sam delete
+java-connect-lex-chatgpt$ sam delete
 ```
 
 ## Sample Deploy Output
 ```bash
-java-postgres-lambda-trigger$ sam deploy
+java-connect-lex-chatgpt$ sam deploy
 
-		Managed S3 bucket: aws-sam-cli-managed-default-samclisourcebucket-13mtysy565mpu
+		Managed S3 bucket: aws-sam-cli-managed-default-samclisourcebucket
 		A different default S3 bucket can be set in samconfig.toml
 		Or by specifying --s3-bucket explicitly.
-File with same data already exists at 118b7556e1cd744803277e0663e0ed67.template, skipping upload
-	Uploading to 010fb9709bddad387f7bb52fcb951137.template  3231 / 3231  (100.00%)
-	Uploading to c40eaf68c93cc685332b62684f40581e  15662376 / 15662376  (100.00%)
-File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping upload
-File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping upload
-File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping upload
-File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping upload
-File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping upload
-File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping upload
-	Uploading to d3853c519bc91a008dfe389fee6d07be  13999391 / 13999391  (100.00%)
-File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping upload
-File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping upload
+File with same data already exists at 80aa0fed5827b7a80fa780734e9c4c09, skipping upload                                                                                                            
+File with same data already exists at 8a3b643e9487598224c935024ab7de90, skipping upload                                                                                                            
+File with same data already exists at d6f1fe447c5e6b528ef821e8612cc5c3, skipping upload                                                                                                            
 
 	Deploying with following values
 	===============================
-	Stack name                   : postgres-lambda-trigger
+	Stack name                   : connect-chatgpt
 	Region                       : us-east-1
 	Confirm changeset            : True
 	Disable rollback             : False
-	Deployment s3 bucket         : aws-sam-cli-managed-default-samclisourcebucket-13mtysy565mpu
+	Deployment s3 bucket         : aws-sam-cli-managed-default-samclisourcebucket
 	Capabilities                 : ["CAPABILITY_IAM"]
 	Parameter overrides          : {}
 	Signing Profiles             : {}
@@ -131,215 +134,203 @@ File with same data already exists at c40eaf68c93cc685332b62684f40581e, skipping
 Initiating deployment
 =====================
 
-	Uploading to ea29b7c6462387e6ec53070650e2ffbf.template  10410 / 10410  (100.00%)
+	Uploading to f837836f7f1a4ab21d28677fcf6980e3.template  36058 / 36058  (100.00%)
 
 
 Waiting for changeset to be created..
 
 CloudFormation stack changeset
----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Operation                                 LogicalResourceId                         ResourceType                              Replacement                             
----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-+ Add                                     ApiGatewayApiGatewayDefaultStage          AWS::ApiGatewayV2::Stage                  N/A                                     
-+ Add                                     ApiGateway                                AWS::ApiGatewayV2::Api                    N/A                                     
-+ Add                                     CreateAddressHelloWorldPermission         AWS::Lambda::Permission                   N/A                                     
-+ Add                                     CreateAddressRole                         AWS::IAM::Role                            N/A                                     
-+ Add                                     CreateAddress                             AWS::Lambda::Function                     N/A                                     
-+ Add                                     DBCustom                                  Custom::DBInitialization                  N/A                                     
-+ Add                                     DBInitializationEventInvokeConfig         AWS::Lambda::EventInvokeConfig            N/A                                     
-+ Add                                     DBInitializationRole                      AWS::IAM::Role                            N/A                                     
-+ Add                                     DBInitialization                          AWS::Lambda::Function                     N/A                                     
-+ Add                                     DeleteAddressHelloWorldPermission         AWS::Lambda::Permission                   N/A                                     
-+ Add                                     DeleteAddressRole                         AWS::IAM::Role                            N/A                                     
-+ Add                                     DeleteAddress                             AWS::Lambda::Function                     N/A                                     
-+ Add                                     DeleteAuditLogHelloWorldPermission        AWS::Lambda::Permission                   N/A                                     
-+ Add                                     DeleteAuditLogRole                        AWS::IAM::Role                            N/A                                     
-+ Add                                     DeleteAuditLog                            AWS::Lambda::Function                     N/A                                     
-+ Add                                     FrontEndHelloWorldPermission              AWS::Lambda::Permission                   N/A                                     
-+ Add                                     FrontEndRole                              AWS::IAM::Role                            N/A                                     
-+ Add                                     FrontEnd                                  AWS::Lambda::Function                     N/A                                     
-+ Add                                     GeoCodingPolicy                           AWS::IAM::ManagedPolicy                   N/A                                     
-+ Add                                     MultipleAddressHelloWorldPermission       AWS::Lambda::Permission                   N/A                                     
-+ Add                                     MultipleAddressRole                       AWS::IAM::Role                            N/A                                     
-+ Add                                     MultipleAddress                           AWS::Lambda::Function                     N/A                                     
-+ Add                                     PlaceIndex                                AWS::Location::PlaceIndex                 N/A                                     
-+ Add                                     PostgresAddressTriggerEventInvokeConfig   AWS::Lambda::EventInvokeConfig            N/A                                     
-+ Add                                     PostgresAddressTriggerRole                AWS::IAM::Role                            N/A                                     
-+ Add                                     PostgresAddressTrigger                    AWS::Lambda::Function                     N/A                                     
-+ Add                                     PostgresAuditLogTriggerEventInvokeConfi   AWS::Lambda::EventInvokeConfig            N/A                                     
-                                          g                                                                                                                           
-+ Add                                     PostgresAuditLogTriggerRole               AWS::IAM::Role                            N/A                                     
-+ Add                                     PostgresAuditLogTriggerSQSRole            AWS::IAM::Role                            N/A                                     
-+ Add                                     PostgresAuditLogTriggerSQSSQSQueue        AWS::Lambda::EventSourceMapping           N/A                                     
-+ Add                                     PostgresAuditLogTriggerSQS                AWS::Lambda::Function                     N/A                                     
-+ Add                                     PostgresAuditLogTrigger                   AWS::Lambda::Function                     N/A                                     
-+ Add                                     RDSStack                                  AWS::CloudFormation::Stack                N/A                                     
-+ Add                                     SQSQueue                                  AWS::SQS::Queue                           N/A                                     
-+ Add                                     SecretsPolicy                             AWS::IAM::ManagedPolicy                   N/A                                     
-+ Add                                     SendToSQSEventInvokeConfig                AWS::Lambda::EventInvokeConfig            N/A                                     
-+ Add                                     SendToSQSRole                             AWS::IAM::Role                            N/A                                     
-+ Add                                     SendToSQS                                 AWS::Lambda::Function                     N/A                                     
----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Operation                                       LogicalResourceId                               ResourceType                                    Replacement                                   
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
++ Add                                           BotAlias                                        AWS::Lex::BotAlias                              N/A                                           
++ Add                                           BotRuntimeRole                                  AWS::IAM::Role                                  N/A                                           
++ Add                                           BotVersion                                      AWS::Lex::BotVersion                            N/A                                           
++ Add                                           BucketKey                                       AWS::KMS::Key                                   N/A                                           
++ Add                                           BucketPolicy                                    AWS::S3::BucketPolicy                           N/A                                           
++ Add                                           CallTable                                       AWS::DynamoDB::Table                            N/A                                           
++ Add                                           ChatGPTAliasSNAPSTART                           AWS::Lambda::Alias                              N/A                                           
++ Add                                           ChatGPTRole                                     AWS::IAM::Role                                  N/A                                           
++ Add                                           ChatGPTVersion5e83da0577                        AWS::Lambda::Version                            N/A                                           
++ Add                                           ChatGPT                                         AWS::Lambda::Function                           N/A                                           
++ Add                                           ClosingPromptEnglish                            Custom::PromptCreator                           N/A                                           
++ Add                                           ClosingPromptSpanish                            Custom::PromptCreator                           N/A                                           
++ Add                                           ConnectFlow                                     AWS::Connect::ContactFlow                       N/A                                           
++ Add                                           ContactUpdatePolicy                             AWS::IAM::ManagedPolicy                         N/A                                           
++ Add                                           ErrorPromptEnglish                              Custom::PromptCreator                           N/A                                           
++ Add                                           ErrorPromptSpanish                              Custom::PromptCreator                           N/A                                           
++ Add                                           HelpPromptEnglish                               Custom::PromptCreator                           N/A                                           
++ Add                                           HelpPromptSpanish                               Custom::PromptCreator                           N/A                                           
++ Add                                           LexBot                                          AWS::Lex::Bot                                   N/A                                           
++ Add                                           LexPromptEnglish                                Custom::PromptCreator                           N/A                                           
++ Add                                           LexPromptSpanish                                Custom::PromptCreator                           N/A                                           
++ Add                                           LexToChatGPTPerm                                AWS::Lambda::Permission                         N/A                                           
++ Add                                           LexToChatGPTSnapPerm                            AWS::Lambda::Permission                         N/A                                           
++ Add                                           LexV2ConnectIntegration                         AWS::Connect::IntegrationAssociation            N/A                                           
++ Add                                           MainPrompt                                      Custom::PromptCreator                           N/A                                           
++ Add                                           NewCallLookupAliasSNAPSTART                     AWS::Lambda::Alias                              N/A                                           
++ Add                                           NewCallLookupRole                               AWS::IAM::Role                                  N/A                                           
++ Add                                           NewCallLookupSNSTriggerPermission               AWS::Lambda::Permission                         N/A                                           
++ Add                                           NewCallLookupSNSTrigger                         AWS::SNS::Subscription                          N/A                                           
++ Add                                           NewCallLookupVersion23a3112bb1                  AWS::Lambda::Version                            N/A                                           
++ Add                                           NewCallLookup                                   AWS::Lambda::Function                           N/A                                           
++ Add                                           NewCallTopic                                    AWS::SNS::Topic                                 N/A                                           
++ Add                                           PromptBucket                                    AWS::S3::Bucket                                 N/A                                           
++ Add                                           PromptCreatorRole                               AWS::IAM::Role                                  N/A                                           
++ Add                                           PromptCreator                                   AWS::Lambda::Function                           N/A                                           
++ Add                                           SendToSNSConnectIntegration                     AWS::Connect::IntegrationAssociation            N/A                                           
++ Add                                           SendToSNSRole                                   AWS::IAM::Role                                  N/A                                           
++ Add                                           SendToSNS                                       AWS::Lambda::Function                           N/A                                           
++ Add                                           SessionTable                                    AWS::DynamoDB::Table                            N/A                                           
++ Add                                           SpanishPrompt                                   Custom::PromptCreator                           N/A                                           
++ Add                                           TransferPromptEnglish                           Custom::PromptCreator                           N/A                                           
++ Add                                           TransferPromptSpanish                           Custom::PromptCreator                           N/A                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-Changeset created successfully. arn:aws:cloudformation:us-east-1::changeSet/samcli-deploy1679564646/e3451f71-d284-4784-b2de-665d79804510
+Changeset created successfully. arn:aws:cloudformation:us-east-1::changeSet/samcli-deploy1685703701/579fda5c-92d1-4c8a-9032-547725a47612
 
 
 Previewing CloudFormation changeset before deployment
 ======================================================
 Deploy this changeset? [y/N]: y
 
-2023-03-23 04:44:19 - Waiting for stack create/update to complete
+2023-06-02 06:02:07 - Waiting for stack create/update to complete
 
-CloudFormation events from stack operations (refresh every 0.5 seconds)
----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ResourceStatus                            ResourceType                              LogicalResourceId                         ResourceStatusReason                    
----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-CREATE_IN_PROGRESS                        AWS::CloudFormation::Stack                RDSStack                                  -                                       
-CREATE_IN_PROGRESS                        AWS::SQS::Queue                           SQSQueue                                  -                                       
-CREATE_IN_PROGRESS                        AWS::Location::PlaceIndex                 PlaceIndex                                -                                       
-CREATE_IN_PROGRESS                        AWS::CloudFormation::Stack                RDSStack                                  Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::SQS::Queue                           SQSQueue                                  Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Location::PlaceIndex                 PlaceIndex                                Resource creation Initiated             
-CREATE_COMPLETE                           AWS::Location::PlaceIndex                 PlaceIndex                                -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::ManagedPolicy                   GeoCodingPolicy                           -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::ManagedPolicy                   GeoCodingPolicy                           Resource creation Initiated             
-CREATE_COMPLETE                           AWS::IAM::ManagedPolicy                   GeoCodingPolicy                           -                                       
-CREATE_COMPLETE                           AWS::SQS::Queue                           SQSQueue                                  -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            SendToSQSRole                             -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            SendToSQSRole                             Resource creation Initiated             
-CREATE_COMPLETE                           AWS::IAM::Role                            SendToSQSRole                             -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     SendToSQS                                 -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     SendToSQS                                 Resource creation Initiated             
-CREATE_COMPLETE                           AWS::Lambda::Function                     SendToSQS                                 -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::EventInvokeConfig            SendToSQSEventInvokeConfig                -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::EventInvokeConfig            SendToSQSEventInvokeConfig                Resource creation Initiated             
-CREATE_COMPLETE                           AWS::Lambda::EventInvokeConfig            SendToSQSEventInvokeConfig                -                                       
-CREATE_COMPLETE                           AWS::CloudFormation::Stack                RDSStack                                  -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::ManagedPolicy                   SecretsPolicy                             -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::ManagedPolicy                   SecretsPolicy                             Resource creation Initiated             
-CREATE_COMPLETE                           AWS::IAM::ManagedPolicy                   SecretsPolicy                             -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            DBInitializationRole                      -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            PostgresAuditLogTriggerSQSRole            -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            CreateAddressRole                         -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            MultipleAddressRole                       -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            DeleteAuditLogRole                        -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            PostgresAuditLogTriggerRole               -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            DBInitializationRole                      Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            DeleteAddressRole                         -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            FrontEndRole                              -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            PostgresAuditLogTriggerSQSRole            Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            MultipleAddressRole                       Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            CreateAddressRole                         Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            DeleteAuditLogRole                        Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            PostgresAuditLogTriggerRole               Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            FrontEndRole                              Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            PostgresAddressTriggerRole                -                                       
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            DeleteAddressRole                         Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::IAM::Role                            PostgresAddressTriggerRole                Resource creation Initiated             
-CREATE_COMPLETE                           AWS::IAM::Role                            MultipleAddressRole                       -                                       
-CREATE_COMPLETE                           AWS::IAM::Role                            DBInitializationRole                      -                                       
-CREATE_COMPLETE                           AWS::IAM::Role                            DeleteAuditLogRole                        -                                       
-CREATE_COMPLETE                           AWS::IAM::Role                            PostgresAuditLogTriggerSQSRole            -                                       
-CREATE_COMPLETE                           AWS::IAM::Role                            PostgresAuditLogTriggerRole               -                                       
-CREATE_COMPLETE                           AWS::IAM::Role                            FrontEndRole                              -                                       
-CREATE_COMPLETE                           AWS::IAM::Role                            DeleteAddressRole                         -                                       
-CREATE_COMPLETE                           AWS::IAM::Role                            PostgresAddressTriggerRole                -                                       
-CREATE_COMPLETE                           AWS::IAM::Role                            CreateAddressRole                         -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     DeleteAuditLog                            -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     DBInitialization                          -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     FrontEnd                                  -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     MultipleAddress                           -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     PostgresAuditLogTriggerSQS                -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     PostgresAuditLogTrigger                   -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     DeleteAddress                             -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     PostgresAddressTrigger                    -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     CreateAddress                             -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     DeleteAuditLog                            Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     MultipleAddress                           Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     FrontEnd                                  Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     PostgresAuditLogTriggerSQS                Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     PostgresAddressTrigger                    Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     DBInitialization                          Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     PostgresAuditLogTrigger                   Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     CreateAddress                             Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Function                     DeleteAddress                             Resource creation Initiated             
-CREATE_COMPLETE                           AWS::Lambda::Function                     DeleteAuditLog                            -                                       
-CREATE_COMPLETE                           AWS::Lambda::Function                     FrontEnd                                  -                                       
-CREATE_COMPLETE                           AWS::Lambda::Function                     MultipleAddress                           -                                       
-CREATE_COMPLETE                           AWS::Lambda::Function                     DBInitialization                          -                                       
-CREATE_COMPLETE                           AWS::Lambda::Function                     CreateAddress                             -                                       
-CREATE_COMPLETE                           AWS::Lambda::Function                     PostgresAddressTrigger                    -                                       
-CREATE_COMPLETE                           AWS::Lambda::Function                     PostgresAuditLogTrigger                   -                                       
-CREATE_COMPLETE                           AWS::Lambda::Function                     DeleteAddress                             -                                       
-CREATE_COMPLETE                           AWS::Lambda::Function                     PostgresAuditLogTriggerSQS                -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::EventInvokeConfig            DBInitializationEventInvokeConfig         -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::EventInvokeConfig            PostgresAddressTriggerEventInvokeConfig   -                                       
-CREATE_IN_PROGRESS                        Custom::DBInitialization                  DBCustom                                  -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::EventInvokeConfig            PostgresAuditLogTriggerEventInvokeConfi   -                                       
-                                                                                    g                                                                                 
-CREATE_IN_PROGRESS                        AWS::Lambda::EventSourceMapping           PostgresAuditLogTriggerSQSSQSQueue        -                                       
-CREATE_IN_PROGRESS                        AWS::ApiGatewayV2::Api                    ApiGateway                                -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::EventInvokeConfig            DBInitializationEventInvokeConfig         Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::EventInvokeConfig            PostgresAddressTriggerEventInvokeConfig   Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::EventInvokeConfig            PostgresAuditLogTriggerEventInvokeConfi   Resource creation Initiated             
-                                                                                    g                                                                                 
-CREATE_COMPLETE                           AWS::Lambda::EventInvokeConfig            PostgresAddressTriggerEventInvokeConfig   -                                       
-CREATE_COMPLETE                           AWS::Lambda::EventInvokeConfig            DBInitializationEventInvokeConfig         -                                       
-CREATE_COMPLETE                           AWS::Lambda::EventInvokeConfig            PostgresAuditLogTriggerEventInvokeConfi   -                                       
-                                                                                    g                                                                                 
-CREATE_IN_PROGRESS                        AWS::Lambda::EventSourceMapping           PostgresAuditLogTriggerSQSSQSQueue        Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::ApiGatewayV2::Api                    ApiGateway                                Resource creation Initiated             
-CREATE_COMPLETE                           AWS::ApiGatewayV2::Api                    ApiGateway                                -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   DeleteAddressHelloWorldPermission         -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   CreateAddressHelloWorldPermission         -                                       
-CREATE_IN_PROGRESS                        AWS::ApiGatewayV2::Stage                  ApiGatewayApiGatewayDefaultStage          -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   MultipleAddressHelloWorldPermission       -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   DeleteAuditLogHelloWorldPermission        -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   FrontEndHelloWorldPermission              -                                       
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   DeleteAddressHelloWorldPermission         Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   DeleteAuditLogHelloWorldPermission        Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   MultipleAddressHelloWorldPermission       Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   FrontEndHelloWorldPermission              Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::Lambda::Permission                   CreateAddressHelloWorldPermission         Resource creation Initiated             
-CREATE_IN_PROGRESS                        AWS::ApiGatewayV2::Stage                  ApiGatewayApiGatewayDefaultStage          Resource creation Initiated             
-CREATE_COMPLETE                           AWS::ApiGatewayV2::Stage                  ApiGatewayApiGatewayDefaultStage          -                                       
-CREATE_IN_PROGRESS                        Custom::DBInitialization                  DBCustom                                  Resource creation Initiated             
-CREATE_COMPLETE                           Custom::DBInitialization                  DBCustom                                  -                                       
-CREATE_COMPLETE                           AWS::Lambda::Permission                   DeleteAddressHelloWorldPermission         -                                       
-CREATE_COMPLETE                           AWS::Lambda::Permission                   CreateAddressHelloWorldPermission         -                                       
-CREATE_COMPLETE                           AWS::Lambda::Permission                   FrontEndHelloWorldPermission              -                                       
-CREATE_COMPLETE                           AWS::Lambda::Permission                   DeleteAuditLogHelloWorldPermission        -                                       
-CREATE_COMPLETE                           AWS::Lambda::Permission                   MultipleAddressHelloWorldPermission       -                                       
-CREATE_COMPLETE                           AWS::Lambda::EventSourceMapping           PostgresAuditLogTriggerSQSSQSQueue        -                                       
-CREATE_COMPLETE                           AWS::CloudFormation::Stack                postgres-lambda-trigger                   -                                       
----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-CloudFormation outputs from deployed stack
------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Outputs                                                                                                                                                               
------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Key                 DBName                                                                                                                                            
-Description         DB Name                                                                                                                                           
-Value               demo                                                                                                                                              
-
-Key                 ApiEndpoint                                                                                                                                       
-Description         API Gateway endpoint URL, Open Browser to this to see demo                                                                                        
-Value               https://2h5pzz1g9b.execute-api.us-east-1.amazonaws.com                                                                                            
-
-Key                 DBEndpoint                                                                                                                                        
-Description         DB Endpoint                                                                                                                                       
-Value               postgres-lambda-trigger-rdssta-serverlessv2cluster-tpbn5iezfclk.cluster-cmkcbj80dwz4.us-east-1.rds.amazonaws.com                                  
-
-Key                 DBURL                                                                                                                                             
-Description         JDBC Connection URL                                                                                                                               
-Value               jdbc:postgresql://postgres-lambda-trigger-rdssta-serverlessv2cluster-tpbn5iezfclk.cluster-cmkcbj80dwz4.us-east-1.rds.amazonaws.com/demo           
-
-Key                 DBUsername                                                                                                                                        
-Description         DB Username                                                                                                                                       
-Value               master                                                                                                                                            
------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+CloudFormation events from stack operations (refresh every 5.0 seconds)
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ResourceStatus                                  ResourceType                                    LogicalResourceId                               ResourceStatusReason                          
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+CREATE_IN_PROGRESS                              AWS::IAM::ManagedPolicy                         ContactUpdatePolicy                             -                                             
+CREATE_IN_PROGRESS                              AWS::KMS::Key                                   BucketKey                                       -                                             
+CREATE_IN_PROGRESS                              AWS::DynamoDB::Table                            SessionTable                                    -                                             
+CREATE_IN_PROGRESS                              AWS::DynamoDB::Table                            CallTable                                       -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  BotRuntimeRole                                  -                                             
+CREATE_IN_PROGRESS                              AWS::SNS::Topic                                 NewCallTopic                                    -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::ManagedPolicy                         ContactUpdatePolicy                             Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  BotRuntimeRole                                  Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::DynamoDB::Table                            SessionTable                                    Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::DynamoDB::Table                            CallTable                                       Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::KMS::Key                                   BucketKey                                       Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::SNS::Topic                                 NewCallTopic                                    Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::SNS::Topic                                 NewCallTopic                                    -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  SendToSNSRole                                   -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  SendToSNSRole                                   Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::DynamoDB::Table                            SessionTable                                    -                                             
+CREATE_COMPLETE                                 AWS::DynamoDB::Table                            CallTable                                       -                                             
+CREATE_COMPLETE                                 AWS::IAM::ManagedPolicy                         ContactUpdatePolicy                             -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  ChatGPTRole                                     -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  ChatGPTRole                                     Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::IAM::Role                                  BotRuntimeRole                                  -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  NewCallLookupRole                               -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  NewCallLookupRole                               Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lex::Bot                                   LexBot                                          -                                             
+CREATE_COMPLETE                                 AWS::IAM::Role                                  SendToSNSRole                                   -                                             
+CREATE_IN_PROGRESS                              AWS::Lex::Bot                                   LexBot                                          Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lambda::Function                           SendToSNS                                       -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Function                           SendToSNS                                       Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::IAM::Role                                  ChatGPTRole                                     -                                             
+CREATE_COMPLETE                                 AWS::Lambda::Function                           SendToSNS                                       -                                             
+CREATE_COMPLETE                                 AWS::IAM::Role                                  NewCallLookupRole                               -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Function                           ChatGPT                                         -                                             
+CREATE_IN_PROGRESS                              AWS::Connect::IntegrationAssociation            SendToSNSConnectIntegration                     -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Function                           ChatGPT                                         Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lambda::Function                           NewCallLookup                                   -                                             
+CREATE_IN_PROGRESS                              AWS::Connect::IntegrationAssociation            SendToSNSConnectIntegration                     Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::Connect::IntegrationAssociation            SendToSNSConnectIntegration                     -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Function                           NewCallLookup                                   Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::Lambda::Function                           ChatGPT                                         -                                             
+CREATE_COMPLETE                                 AWS::Lex::Bot                                   LexBot                                          -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Permission                         LexToChatGPTPerm                                -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Version                            ChatGPTVersion5e83da0577                        -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Permission                         LexToChatGPTPerm                                Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lambda::Version                            ChatGPTVersion5e83da0577                        Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lex::BotVersion                            BotVersion                                      -                                             
+CREATE_COMPLETE                                 AWS::Lambda::Function                           NewCallLookup                                   -                                             
+CREATE_IN_PROGRESS                              AWS::Lex::BotVersion                            BotVersion                                      Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lambda::Version                            NewCallLookupVersion23a3112bb1                  -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Version                            NewCallLookupVersion23a3112bb1                  Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::Lambda::Permission                         LexToChatGPTPerm                                -                                             
+CREATE_COMPLETE                                 AWS::Lex::BotVersion                            BotVersion                                      -                                             
+CREATE_COMPLETE                                 AWS::KMS::Key                                   BucketKey                                       -                                             
+CREATE_IN_PROGRESS                              AWS::S3::Bucket                                 PromptBucket                                    -                                             
+CREATE_IN_PROGRESS                              AWS::S3::Bucket                                 PromptBucket                                    Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::S3::Bucket                                 PromptBucket                                    -                                             
+CREATE_IN_PROGRESS                              AWS::S3::BucketPolicy                           BucketPolicy                                    -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  PromptCreatorRole                               -                                             
+CREATE_IN_PROGRESS                              AWS::IAM::Role                                  PromptCreatorRole                               Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::S3::BucketPolicy                           BucketPolicy                                    Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::S3::BucketPolicy                           BucketPolicy                                    -                                             
+CREATE_COMPLETE                                 AWS::IAM::Role                                  PromptCreatorRole                               -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Function                           PromptCreator                                   -                                             
+CREATE_COMPLETE                                 AWS::Lambda::Version                            ChatGPTVersion5e83da0577                        -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Function                           PromptCreator                                   Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lambda::Alias                              ChatGPTAliasSNAPSTART                           -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Alias                              ChatGPTAliasSNAPSTART                           Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::Lambda::Alias                              ChatGPTAliasSNAPSTART                           -                                             
+CREATE_COMPLETE                                 AWS::Lambda::Version                            NewCallLookupVersion23a3112bb1                  -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Permission                         LexToChatGPTSnapPerm                            -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Permission                         LexToChatGPTSnapPerm                            Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lex::BotAlias                              BotAlias                                        -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Alias                              NewCallLookupAliasSNAPSTART                     -                                             
+CREATE_IN_PROGRESS                              AWS::Lex::BotAlias                              BotAlias                                        Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Lambda::Alias                              NewCallLookupAliasSNAPSTART                     Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::Lambda::Alias                              NewCallLookupAliasSNAPSTART                     -                                             
+CREATE_COMPLETE                                 AWS::Lex::BotAlias                              BotAlias                                        -                                             
+CREATE_COMPLETE                                 AWS::Lambda::Function                           PromptCreator                                   -                                             
+CREATE_IN_PROGRESS                              AWS::SNS::Subscription                          NewCallLookupSNSTrigger                         -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Permission                         NewCallLookupSNSTriggerPermission               -                                             
+CREATE_IN_PROGRESS                              AWS::Connect::ContactFlow                       ConnectFlow                                     -                                             
+CREATE_IN_PROGRESS                              AWS::Lambda::Permission                         NewCallLookupSNSTriggerPermission               Resource creation Initiated                   
+CREATE_IN_PROGRESS                              AWS::Connect::IntegrationAssociation            LexV2ConnectIntegration                         -                                             
+CREATE_IN_PROGRESS                              AWS::SNS::Subscription                          NewCallLookupSNSTrigger                         Resource creation Initiated                   
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           LexPromptSpanish                                -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           ClosingPromptSpanish                            -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           TransferPromptEnglish                           -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           TransferPromptSpanish                           -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           ErrorPromptEnglish                              -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           ErrorPromptSpanish                              -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           ClosingPromptEnglish                            -                                             
+CREATE_COMPLETE                                 AWS::SNS::Subscription                          NewCallLookupSNSTrigger                         -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           HelpPromptEnglish                               -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           MainPrompt                                      -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           LexPromptEnglish                                -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           SpanishPrompt                                   -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           HelpPromptSpanish                               -                                             
+CREATE_IN_PROGRESS                              AWS::Connect::ContactFlow                       ConnectFlow                                     Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::Connect::ContactFlow                       ConnectFlow                                     -                                             
+CREATE_IN_PROGRESS                              AWS::Connect::IntegrationAssociation            LexV2ConnectIntegration                         Resource creation Initiated                   
+CREATE_COMPLETE                                 AWS::Connect::IntegrationAssociation            LexV2ConnectIntegration                         -                                             
+CREATE_COMPLETE                                 AWS::Lambda::Permission                         LexToChatGPTSnapPerm                            -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           ClosingPromptSpanish                            Resource creation Initiated                   
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           ClosingPromptEnglish                            Resource creation Initiated                   
+CREATE_COMPLETE                                 Custom::PromptCreator                           ClosingPromptSpanish                            -                                             
+CREATE_COMPLETE                                 Custom::PromptCreator                           ClosingPromptEnglish                            -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           SpanishPrompt                                   Resource creation Initiated                   
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           LexPromptSpanish                                Resource creation Initiated                   
+CREATE_COMPLETE                                 Custom::PromptCreator                           SpanishPrompt                                   -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           TransferPromptSpanish                           Resource creation Initiated                   
+CREATE_COMPLETE                                 Custom::PromptCreator                           LexPromptSpanish                                -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           ErrorPromptEnglish                              Resource creation Initiated                   
+CREATE_COMPLETE                                 Custom::PromptCreator                           TransferPromptSpanish                           -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           ErrorPromptSpanish                              Resource creation Initiated                   
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           HelpPromptEnglish                               Resource creation Initiated                   
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           TransferPromptEnglish                           Resource creation Initiated                   
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           MainPrompt                                      Resource creation Initiated                   
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           LexPromptEnglish                                Resource creation Initiated                   
+CREATE_COMPLETE                                 Custom::PromptCreator                           ErrorPromptEnglish                              -                                             
+CREATE_COMPLETE                                 Custom::PromptCreator                           ErrorPromptSpanish                              -                                             
+CREATE_IN_PROGRESS                              Custom::PromptCreator                           HelpPromptSpanish                               Resource creation Initiated                   
+CREATE_COMPLETE                                 Custom::PromptCreator                           HelpPromptEnglish                               -                                             
+CREATE_COMPLETE                                 Custom::PromptCreator                           TransferPromptEnglish                           -                                             
+CREATE_COMPLETE                                 Custom::PromptCreator                           MainPrompt                                      -                                             
+CREATE_COMPLETE                                 Custom::PromptCreator                           LexPromptEnglish                                -                                             
+CREATE_COMPLETE                                 Custom::PromptCreator                           HelpPromptSpanish                               -                                             
+CREATE_COMPLETE                                 AWS::Lambda::Permission                         NewCallLookupSNSTriggerPermission               -                                             
+CREATE_COMPLETE                                 AWS::CloudFormation::Stack                      connect-chatgpt                                 -                                             
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-Successfully created/updated stack - postgres-lambda-trigger in us-east-1
+Successfully created/updated stack - connect-chatgpt in us-east-1
+
 ```
