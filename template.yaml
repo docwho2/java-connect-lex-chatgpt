@@ -4,10 +4,10 @@ Description: >
   AWS Connect ChatGPT Integration
 
 Parameters:
-  CONNECTARN:
-    Description: Connect ARN to attach LEX Bot to
+  CONNECTID:
+    Description: AWS Connect Instance ID (last part of the ARN)
     Type: String
-    Default: arn:aws:connect:us-east-1:364253738352:instance/f837ec93-b6e5-4429-acb7-f698fff0148c
+    Default: f837ec93-b6e5-4429-acb7-f698fff0148c
   OPENAIAPIKEY:
     Description: OpenAI Key stored in parameter store
     Type: AWS::SSM::Parameter::Value<String>
@@ -111,7 +111,6 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Sub ${AWS::StackName}-prompts
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -137,7 +136,7 @@ Resources:
               - !Join [ "", [ !GetAtt PromptBucket.Arn , '/*' ] ]
             Condition:
               StringEquals:
-                "aws:SourceArn": !Ref CONNECTARN
+                "aws:SourceArn": !Sub arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${CONNECTID}
                 "aws:SourceAccount": !Sub "${AWS::AccountId}"
                 
  
@@ -292,7 +291,7 @@ Resources:
                   - "lambda:invokeFunction"
                 Resource: "*"
                 
-  LexBotEnglish:
+  LexBot:
     Type: AWS::Lex::Bot
     Properties:
       Name: !Sub ${AWS::StackName}-Lex-Bot
@@ -407,10 +406,10 @@ Resources:
                               - PlainTextMessage:
                                   Value: "la transformación"  
           
-  BotVersionEnglish:
+  BotVersion:
     Type: AWS::Lex::BotVersion
     Properties:
-      BotId: !Ref LexBotEnglish
+      BotId: !Ref LexBot
       BotVersionLocaleSpecification:
         - LocaleId: en_US
           BotVersionLocaleDetails:
@@ -418,14 +417,14 @@ Resources:
         - LocaleId: es_US
           BotVersionLocaleDetails:
             SourceBotVersion: DRAFT
-      Description: ChatGPT Bot English
+      Description: ChatGPT Bot V1
       
-  BotAliasEnglish:
+  BotAlias:
     Type: AWS::Lex::BotAlias
     Properties:
-      BotId: !Ref LexBotEnglish
+      BotId: !Ref LexBot
       BotAliasName: "Latest"
-      BotVersion: !GetAtt BotVersionEnglish.BotVersion
+      BotVersion: !GetAtt BotVersion.BotVersion
       SentimentAnalysisSettings:
         DetectSentiment: false
       BotAliasLocaleSettings:
@@ -444,12 +443,12 @@ Resources:
                 CodeHookInterfaceVersion: "1.0"
                 LambdaArn: !Ref ChatGPT.Alias
         
-  LexV2ConnectIntegrationEnglish:
+  LexV2ConnectIntegration:
     Type: AWS::Connect::IntegrationAssociation
     Properties:
-      InstanceId: !Ref CONNECTARN
+      InstanceId: !Sub arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${CONNECTID}
       IntegrationType: LEX_BOT
-      IntegrationArn: !GetAtt BotAliasEnglish.Arn
+      IntegrationArn: !GetAtt BotAlias.Arn
       
   NewCallTopic:
         Type: AWS::SNS::Topic
@@ -492,7 +491,7 @@ Resources:
   SendToSNSConnectIntegration:
     Type: AWS::Connect::IntegrationAssociation
     Properties:
-      InstanceId: !Ref CONNECTARN
+      InstanceId: !Sub arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${CONNECTID}
       IntegrationType: LAMBDA_FUNCTION
       IntegrationArn: !GetAtt SendToSNS.Arn
   
@@ -612,4 +611,348 @@ Resources:
       TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
+ 
           
+  ConnectFlow:
+    Type: AWS::Connect::ContactFlow
+    Properties:
+      Name: !Sub ${AWS::StackName}-gptflow
+      Description: ChatGPT Contact Flow
+      Type: CONTACT_FLOW
+      InstanceArn: !Sub arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${CONNECTID}
+      Content: !Sub |
+        {
+          "Version": "2019-10-30",
+          "StartAction": "8900852b-67ed-4e7c-b9db-1b7e372bdf69",
+          "Actions": [{
+            "Parameters": {
+                "TextToSpeechVoice": "${VOICEIDES}"
+            },
+            "Identifier": "78335f1c-12d8-441e-aedc-f348e9699023",
+            "Type": "UpdateContactTextToSpeechVoice",
+            "Transitions": {
+                "NextAction": "6ecffbe5-6947-47d5-ac01-d1a912acce29"
+            }
+        }, {
+            "Parameters": {
+                "LanguageCode": "es-US"
+            },
+            "Identifier": "6ecffbe5-6947-47d5-ac01-d1a912acce29",
+            "Type": "UpdateContactData",
+            "Transitions": {
+                "NextAction": "6808064a-12a7-4734-81c2-7dc6f7299339",
+                "Errors": [{
+                        "NextAction": "6808064a-12a7-4734-81c2-7dc6f7299339",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "TextToSpeechVoice": "${VOICEIDEN}"
+            },
+            "Identifier": "23da7771-7a02-42e6-8381-3fcb25f39697",
+            "Type": "UpdateContactTextToSpeechVoice",
+            "Transitions": {
+                "NextAction": "b9aff07a-7ad1-4b99-9092-0eaf799bdc96"
+            }
+        }, {
+            "Parameters": {
+                "LanguageCode": "en-US"
+            },
+            "Identifier": "b9aff07a-7ad1-4b99-9092-0eaf799bdc96",
+            "Type": "UpdateContactData",
+            "Transitions": {
+                "NextAction": "6fa66314-f6a2-4829-b466-86dad4bc3b43",
+                "Errors": [{
+                        "NextAction": "6fa66314-f6a2-4829-b466-86dad4bc3b43",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "FlowLoggingBehavior": "Enabled"
+            },
+            "Identifier": "8900852b-67ed-4e7c-b9db-1b7e372bdf69",
+            "Type": "UpdateFlowLoggingBehavior",
+            "Transitions": {
+                "NextAction": "23da7771-7a02-42e6-8381-3fcb25f39697"
+            }
+        }, {
+            "Parameters": {},
+            "Identifier": "2a32e14c-0951-4060-b3c9-580ea1d0d910",
+            "Type": "DisconnectParticipant",
+            "Transitions": {}
+        }, {
+            "Parameters": {
+                "ThirdPartyPhoneNumber": "+16122260725",
+                "ThirdPartyConnectionTimeLimitSeconds": "30",
+                "ContinueFlowExecution": "False",
+                "CallerId": {
+                    "Name": "AWSCONNECT",
+                    "Number": "+16122559991"
+                }
+            },
+            "Identifier": "5d88d7d0-5b1c-4b3d-9fb8-246b2e64f56f",
+            "Type": "TransferParticipantToThirdParty",
+            "Transitions": {
+                "NextAction": "2a32e14c-0951-4060-b3c9-580ea1d0d910",
+                "Errors": [{
+                        "NextAction": "2a32e14c-0951-4060-b3c9-580ea1d0d910",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "StoreInput": "False",
+                "InputTimeLimitSeconds": "3",
+                "Media": {
+                    "Uri": "s3://${PromptBucket}/spanish.wav",
+                    "SourceType": "S3",
+                    "MediaType": "Audio"
+                }
+            },
+            "Identifier": "4dc9bbef-e78f-49f4-844d-9d07986704f0",
+            "Type": "GetParticipantInput",
+            "Transitions": {
+                "NextAction": "e86e4dd1-0104-4d67-bddc-10182127273e",
+                "Conditions": [{
+                        "NextAction": "78335f1c-12d8-441e-aedc-f348e9699023",
+                        "Condition": {
+                            "Operator": "Equals",
+                            "Operands": ["2"]
+                        }
+                    }],
+                "Errors": [{
+                        "NextAction": "e86e4dd1-0104-4d67-bddc-10182127273e",
+                        "ErrorType": "InputTimeLimitExceeded"
+                    }, {
+                        "NextAction": "e86e4dd1-0104-4d67-bddc-10182127273e",
+                        "ErrorType": "NoMatchingCondition"
+                    }, {
+                        "NextAction": "e86e4dd1-0104-4d67-bddc-10182127273e",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "Media": {
+                    "Uri": "s3://${PromptBucket}/closing_$.['LanguageCode']_.wav",
+                    "SourceType": "S3",
+                    "MediaType": "Audio"
+                }
+            },
+            "Identifier": "41429fc7-4d86-406d-ad8b-c68d31f5123c",
+            "Type": "MessageParticipant",
+            "Transitions": {
+                "NextAction": "2a32e14c-0951-4060-b3c9-580ea1d0d910",
+                "Errors": [{
+                        "NextAction": "2a32e14c-0951-4060-b3c9-580ea1d0d910",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "Media": {
+                    "Uri": "s3://${PromptBucket}/error_$.['LanguageCode']_.wav",
+                    "SourceType": "S3",
+                    "MediaType": "Audio"
+                }
+            },
+            "Identifier": "4346b8e4-b01b-40d9-9ec9-a41386aa51d5",
+            "Type": "MessageParticipant",
+            "Transitions": {
+                "NextAction": "2a32e14c-0951-4060-b3c9-580ea1d0d910",
+                "Errors": [{
+                        "NextAction": "2a32e14c-0951-4060-b3c9-580ea1d0d910",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "Media": {
+                    "Uri": "s3://${PromptBucket}/transfer_$.['LanguageCode']_.wav",
+                    "SourceType": "S3",
+                    "MediaType": "Audio"
+                }
+            },
+            "Identifier": "652dd2c3-0163-4eb1-aba6-e65d0ae3f51f",
+            "Type": "MessageParticipant",
+            "Transitions": {
+                "NextAction": "5d88d7d0-5b1c-4b3d-9fb8-246b2e64f56f",
+                "Errors": [{
+                        "NextAction": "5d88d7d0-5b1c-4b3d-9fb8-246b2e64f56f",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "Media": {
+                    "Uri": "s3://${PromptBucket}/help_$.['LanguageCode']_.wav",
+                    "SourceType": "S3",
+                    "MediaType": "Audio"
+                }
+            },
+            "Identifier": "ce3c59e8-960c-4d9b-937c-e0b33e4399bb",
+            "Type": "MessageParticipant",
+            "Transitions": {
+                "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                "Errors": [{
+                        "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "ComparisonValue": "$.Attributes.PlayPrompt"
+            },
+            "Identifier": "e86e4dd1-0104-4d67-bddc-10182127273e",
+            "Type": "Compare",
+            "Transitions": {
+                "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                "Conditions": [{
+                        "NextAction": "e2edb7ac-38ae-4587-a9b7-a73218392c2e",
+                        "Condition": {
+                            "Operator": "Equals",
+                            "Operands": ["true"]
+                        }
+                    }],
+                "Errors": [{
+                        "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                        "ErrorType": "NoMatchingCondition"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "Text": "$.Attributes.PlayPrompt-en-US"
+            },
+            "Identifier": "e2edb7ac-38ae-4587-a9b7-a73218392c2e",
+            "Type": "MessageParticipant",
+            "Transitions": {
+                "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                "Errors": [{
+                        "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "ComparisonValue": "$.Attributes.PlayPrompt"
+            },
+            "Identifier": "6808064a-12a7-4734-81c2-7dc6f7299339",
+            "Type": "Compare",
+            "Transitions": {
+                "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                "Conditions": [{
+                        "NextAction": "18a6944c-7ab9-4415-9780-d0c104e7a620",
+                        "Condition": {
+                            "Operator": "Equals",
+                            "Operands": ["true"]
+                        }
+                    }],
+                "Errors": [{
+                        "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                        "ErrorType": "NoMatchingCondition"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "Text": "$.Attributes.PlayPrompt-es-US"
+            },
+            "Identifier": "18a6944c-7ab9-4415-9780-d0c104e7a620",
+            "Type": "MessageParticipant",
+            "Transitions": {
+                "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                "Errors": [{
+                        "NextAction": "3e562537-3142-4bbc-86db-ab8e09c366de",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "Media": {
+                    "Uri": "s3://${PromptBucket}/lex_$.['LanguageCode']_.wav",
+                    "SourceType": "S3",
+                    "MediaType": "Audio"
+                },
+                "LexV2Bot": {
+                    "AliasArn": "${BotAlias.Arn}"
+                },
+                "LexSessionAttributes": {
+                    "CustomerNumber": "$.CustomerEndpoint.Address",
+                    "InstanceArn": "$.InstanceARN"
+                }
+            },
+            "Identifier": "3e562537-3142-4bbc-86db-ab8e09c366de",
+            "Type": "ConnectParticipantWithLexBot",
+            "Transitions": {
+                "NextAction": "4346b8e4-b01b-40d9-9ec9-a41386aa51d5",
+                "Conditions": [{
+                        "NextAction": "ce3c59e8-960c-4d9b-937c-e0b33e4399bb",
+                        "Condition": {
+                            "Operator": "Equals",
+                            "Operands": ["About"]
+                        }
+                    }, {
+                        "NextAction": "652dd2c3-0163-4eb1-aba6-e65d0ae3f51f",
+                        "Condition": {
+                            "Operator": "Equals",
+                            "Operands": ["${NAMEENGLISH}"]
+                        }
+                    }, {
+                        "NextAction": "41429fc7-4d86-406d-ad8b-c68d31f5123c",
+                        "Condition": {
+                            "Operator": "Equals",
+                            "Operands": ["Quit"]
+                        }
+                    }],
+                "Errors": [{
+                        "NextAction": "4346b8e4-b01b-40d9-9ec9-a41386aa51d5",
+                        "ErrorType": "NoMatchingCondition"
+                    }, {
+                        "NextAction": "4346b8e4-b01b-40d9-9ec9-a41386aa51d5",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "Media": {
+                    "Uri": "s3://${PromptBucket}/main.wav",
+                    "SourceType": "S3",
+                    "MediaType": "Audio"
+                }
+            },
+            "Identifier": "8dd8a4dd-929e-4c2c-9bd6-74b17f2380e3",
+            "Type": "MessageParticipant",
+            "Transitions": {
+                "NextAction": "4dc9bbef-e78f-49f4-844d-9d07986704f0",
+                "Errors": [{
+                        "NextAction": "4dc9bbef-e78f-49f4-844d-9d07986704f0",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }, {
+            "Parameters": {
+                "LambdaFunctionARN": "${SendToSNS.Arn}",
+                "InvocationTimeLimitSeconds": "3",
+                "LambdaInvocationAttributes": {
+                    "P-Asserted-Identity": "$.Media.Sip.Headers.P-Asserted-Identity",
+                    "From": "$.Media.Sip.Headers.From",
+                    "ISUP-OLI": "$.Media.Sip.Headers.ISUP-OLI",
+                    "Calling-Party-Address": "$.Media.Sip.Headers.Calling-Party-Address"
+                },
+                "ResponseValidation": {
+                    "ResponseType": "STRING_MAP"
+                }
+            },
+            "Identifier": "6fa66314-f6a2-4829-b466-86dad4bc3b43",
+            "Type": "InvokeLambdaFunction",
+            "Transitions": {
+                "NextAction": "8dd8a4dd-929e-4c2c-9bd6-74b17f2380e3",
+                "Errors": [{
+                        "NextAction": "8dd8a4dd-929e-4c2c-9bd6-74b17f2380e3",
+                        "ErrorType": "NoMatchingError"
+                    }]
+            }
+        }]
+        }
+      
