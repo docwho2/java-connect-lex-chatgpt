@@ -24,7 +24,20 @@ Other goals of the project:
 - To simply provide a full working example with Java and AWS RDS Postgres (what I use day to day).  The Demo on the AWS Website is MySQL with NodeJS and there was nothing I could find that really showed a full use case in Java.
 
 ## High Level Architecture
-![Architecture Diagram](arch.jpg)
+![Architecture Diagram](assets/arch.jpg)
+
+### Call Flow
+![Call Flow](assets/flow.jpg)
+
+### Initial Call to Lambda
+![Call Flow Part 1](assets/flowpart1.jpg)
+
+### Ask for Language then play conditional prompt
+![Call Flow Part 2](assets/flowpart2.jpg)
+
+### Lex and output intents
+![Call Flow Part 3](assets/flowpart3.jpg)
+
 
 ## Contents
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
@@ -65,7 +78,7 @@ java-connect-lex-chatgpt$ sam deploy
 
 The first command will will setup some required components like the V4 Java Events library that is not published yet (this is a sub-module) and install the parent POM used by Lambda functions.
 The second command will build the source of the application. 
-The third command will package and deploy the project to AWS as a CloudFormation Stack.  
+The third command will package and deploy the project to AWS as a CloudFormation Stack. 
 You will see the progress as the stack deploys.
 
 
@@ -76,7 +89,7 @@ You will see the progress as the stack deploys.
 
 ## Associate Phone number to the Connect Flow and place calls in
 
-![Demo User Interface](UI.png)
+
 
 When you open the API GW Endpoint URL in your browser you will see the above UI.  When the DB initializes, one address row is inserted for you, so you should see 1 row with an address Geo encoded and 2 entries in the `audit_log` tables.  The UI displays all the rows in both `address` and `audit_log` tables.  There are four actions to perform in the demo:
 
