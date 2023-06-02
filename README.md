@@ -27,16 +27,16 @@ Other goals of the project:
 ![Architecture Diagram](assets/arch.jpg)
 
 ### Call Flow
-![Call Flow](assets/flow.jpg)
+![Call Flow](assets/flow.png)
 
 ### Initial Call to Lambda
-![Call Flow Part 1](assets/flowpart1.jpg)
+![Call Flow Part 1](assets/flowpart1.png)
 
 ### Ask for Language then play conditional prompt
-![Call Flow Part 2](assets/flowpart2.jpg)
+![Call Flow Part 2](assets/flowpart2.png)
 
 ### Lex and output intents
-![Call Flow Part 3](assets/flowpart3.jpg)
+![Call Flow Part 3](assets/flowpart3.png)
 
 
 ## Contents
