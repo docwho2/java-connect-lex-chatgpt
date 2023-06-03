@@ -92,15 +92,14 @@ This project contains source code and supporting files for a serverless applicat
 
 - [ChatGPT](ChatGPT/src/main/java/cloud/cleo/connectgpt/) - Lambda fullfillment hook that calls out to OpenAI ChatGPT
 - [PolyPromptCreation](PolyPromptCreation/src/main/java/cloud/cleo/connectgpt/)  - [Custom Resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html) Lambda that does all the static prompt creation
-- [NewCallLookup](NewCallLookup/src/main/java/cloud/cleo/connectgpt/) - Lambda that is called for every incoming call that logs it to DyanmoDB and updates Contact Attributes to play a condition prompt
+- [NewCallLookup](NewCallLookup/src/main/java/cloud/cleo/connectgpt/) - Lambda that is called for every incoming call that logs it to DyanmoDB and updates Contact Attributes to play a conditional prompt
 - CloudFormation script for all AWS resources
 	- [template.yaml](template.yaml) - Creates all the SAM lambda functions and associated AWS resources.
 
 
 ## Deploy the Project
 
-The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications.  
-Before proceeding, it is assumed you have valid AWS credentials setup with the AWS CLI and permissions to perform CloudFormation stack operations.
+The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications.  Before proceeding, it is assumed you have valid AWS credentials setup with the AWS CLI and permissions to perform CloudFormation stack operations.
 
 To use the SAM CLI, you need the following tools.
 
@@ -135,7 +134,7 @@ that tells you there is no value for "OPENAI_API_KEY" in the [Parameter Store](h
 
 
 
-## Associate Phone number to the Connect Flow and place calls in
+## Associate Phone number to the Connect Flow
 
 Once you have deployed the project, in the Amazon Connect Console, you just need to associate the flow with a phone number.
 
