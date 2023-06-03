@@ -69,17 +69,21 @@ Checking to see if background process has something we need to act on:
 ### Lex/ChatGPT and output intents
 
 At this point in the call, the language is known and control is now at the Lex Bot:
-- Because the bot itself does not control the call, we need Lex intents that can transfer the call or hang up on the caller
+- Because the bot itself does not control the call, we need Lex intents that can transfer the call or hang up on the caller which must be done by the Call Flow
   - The "About" intent will play a long prompt describing the project
   - The "Quit" intent will play a thank you prompt and disconnect the call
-  - The "Steve" intent in this case will transfer the call to an external number
-- When the Lex Bot can't match the above intents it sends the transcript (what the caller said) to the FallBack Intent which is connected to the [ChatGPT](ChatGPT/src/main/java/cloud/cleo/connectgpt/) Lambda
+  - The "Transfer" intent in this case will transfer the call to an external number
+- When the Lex Bot can't match the above intents it sends the transcript (what the caller said) to the [FallBack Intent](https://docs.aws.amazon.com/lexv2/latest/dg/built-in-intent-fallback.html)  which is connected to the [ChatGPT Lambda](ChatGPT/src/main/java/cloud/cleo/connectgpt/ChatGPTLambda.java) 
   - The Lambda then sends the transcript to ChatGPT and returns the result to the Lex Bot with a dialog action of [ElicitIntent](https://docs.aws.amazon.com/lexv2/latest/APIReference/API_runtime_DialogAction.html)
   - The result is the ChatGPT response is played back the caller and the LexBot is once again listening for the next Intent to match
-  - The conversation can continue until the caller hangs up or matches the Quit intent (saying good bye, thanks, all done, etc.)
+  - The conversation can continue until the caller hangs up or matches the Quit intent (saying good bye, thanks, all done, etc.) or Transfer intent
 - The Lambda can also tell the Lex Bot to fullfill another intent
   - After 2 subsequent silence timeouts the Lambda will respond with a Delegate to the "Quit" intent which will then disconnect the call.  This is needed because if someone calls and says nothing, we don't want to keep the call up consuming resources forever.
-  - Another possibility is to check the length of the chat history and disconnect the call for too many requests or check for profanity and also disconnect in this case.
+  - Another possibility is to check the length of the chat history and disconnect the call for too many requests or check for profanity and also disconnect in that case.
+- Lambda Error Handling
+  - A number of things can happen and go wrong of course and the Lambda has to respond properly
+  - If you ask for something complicated or ChatGPT is just busy/slow at the moment the API call will timeout and the appropiate response (in the callers language) must be returned telling the caller to try again
+  - If ChatGPT is down or there is a network connectivity issue, any unhandled exception in the code is returned telling the caller something is down, try again later
 ![Call Flow Part 3](assets/flowpart3.png)
 
 
