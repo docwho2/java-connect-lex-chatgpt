@@ -12,6 +12,13 @@ Parameters:
     Description: OpenAI Key stored in parameter store
     Type: AWS::SSM::Parameter::Value<String>
     Default: OPENAI_API_KEY
+  OPENAIMODEL:
+    Description: OpenAI ChatGPT Model
+    Type: String
+    Default: gpt-3.5-turbo
+    AllowedValues: # https://platform.openai.com/docs/models/overview
+        - gpt-3.5-turbo
+        - gpt-4
   VOICEIDEN:
     Description: The voice used for LEX and prompt generation for English
     Type: String
@@ -40,11 +47,15 @@ Parameters:
   NAMEENGLISH:
     Description: First Name for transferring calls to in English
     Type: String
-    Default: Steve
+    Default: Representative
   NAMESPANISH:
     Description: First Name for transferring calls to in Spanish
     Type: String
-    Default: Esteban
+    Default: Representante
+  TRANSFERNUMBER:
+    Description: Phone Number to transfer calls to for a person
+    Type: String
+    Default: '+18004444444'
        
 
 Globals:
@@ -454,7 +465,7 @@ Resources:
         Type: AWS::SNS::Topic
         Properties:
             DisplayName: Connect
-            TopicName: ConnectNewCall
+            TopicName: !Sub ${AWS::StackName}-ConnectNewCall
             
             
   SendToSNS:
@@ -563,7 +574,7 @@ Resources:
       CodeUri: ./ChatGPT
       Environment: 
         Variables:
-          OPENAI_MODEL: gpt-3.5-turbo
+          OPENAI_MODEL: !Ref OPENAIMODEL
           OPENAI_API_KEY: !Ref OPENAIAPIKEY
           SESSION_TABLE_NAME: !Ref SessionTable
       SnapStart:
@@ -684,12 +695,11 @@ Resources:
             "Transitions": {}
         }, {
             "Parameters": {
-                "ThirdPartyPhoneNumber": "+16122260725",
+                "ThirdPartyPhoneNumber": "${TRANSFERNUMBER}",
                 "ThirdPartyConnectionTimeLimitSeconds": "30",
                 "ContinueFlowExecution": "False",
                 "CallerId": {
-                    "Name": "AWSCONNECT",
-                    "Number": "+16122559991"
+                    "Name": "AWSCONNECT"
                 }
             },
             "Identifier": "5d88d7d0-5b1c-4b3d-9fb8-246b2e64f56f",
