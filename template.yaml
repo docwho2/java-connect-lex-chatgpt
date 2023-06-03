@@ -157,7 +157,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-PromptCreator
       Description: Creates Static prompts to be used in Connect Flows
       Handler: cloud.cleo.connectgpt.PollyPromptGenerator
-      CodeUri: ./PolyPromptCreation
+      CodeUri: ./PollyPromptCreation
       Environment: 
         Variables:
             PROMPT_BUCKET: !Ref PromptBucket
