@@ -3,7 +3,7 @@
 ## Background
 
 This project demonstrates an integration of [Amazon Connect](https://aws.amazon.com/pm/connect/) to [OpenAI ChatGPT](https://openai.com/product/chatgpt) in both English and Spanish via 
-an [AWS Lex Bot](https://aws.amazon.com/pm/lex/).  There are some examples out there in NodeJS and Python that demostrate a basic integration with some screen shots, but not a fully working 
+an [AWS Lex Bot](https://aws.amazon.com/pm/lex/).  There are some examples out there in NodeJS and Python that demonstrate a basic integration with some screen shots, but not a fully working 
 example (with chat context) that can be easily deployed via CloudFormation, including the call flow itself and the glue to bring it together with minimal console interaction.
 
 The basic strategy is to deploy a normal LexV2 Bot with intents to handle a couple cases (like help, talk to someone, and hanging up on the caller) and use the 
@@ -16,11 +16,13 @@ of what you said in the prior call.  When you call the next day, you are startin
 Because tearing down and building Connect instances is rate limited and can lock you out for 30 days, you will need to pass in an instance ID of an existing Amazon Connect instance to deploy 
 this project.  You will also need to allocate a phone number and associate it with the created call flow.  You can of course use an existing phone number in your instance and temporarily point 
 it at the "connect-chatgpt-gptflow".  If you are deploying this, the assumption would be you are familiar enough with Amazon Connect to bring up an instance and allocate a phone number or you 
-already have an existing instance.  You will also need an [OpenAI API key](https://platform.openai.com/account/api-keys) saved to parameter store (OPENAI_API_KEY is the default in the template).
+already have an existing instance.  You will also need an [OpenAI API key](https://platform.openai.com/account/api-keys) saved to [Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html) 
+(OPENAI_API_KEY is the default in the template).
 
 
 Other Features:
-- Use of [Static Prompts](https://docs.aws.amazon.com/connect/latest/adminguide/setup-prompts-s3.html) defined in the CloudFormation itself.
+- Use of [Static Prompts](https://docs.aws.amazon.com/connect/latest/adminguide/setup-prompts-s3.html) defined in the CloudFormation itself.  
+  Polly is fast inside Connect, but I just have to believe longer static prompts from S3 will provide lower latency for playback.
 - Background lookup of call data that doesn't block the call flow waiting on a result.
 - Multilingual support.  Spanish and English are supported, but another language supported by Lex and ChatGPT should be easy to implement.
 - Lex Intents
@@ -36,7 +38,8 @@ Other goals of the project (technical focus):
 - Generate Prompts with Polly and use SOX to convert them in a Lambda (a project in and of itself!)
 - Use of [SnapStart](https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html) to reduce latency (which is important for a voice interface) on Lambda Functions
 - Dynamic Creation of the Connect Flow based on CloudFormation
-- To simply provide a full working example with Java well structured using the best available API's 
+- To simply provide a full working example with Java well structured using the best available API's
+  - [openai-java](https://github.com/TheoKanning/openai-java)
 
 ## Architecture
 
@@ -65,6 +68,18 @@ Checking to see if background process has something we need to act on:
 
 ### Lex/ChatGPT and output intents
 
+At this point in the call, the language is known and control is now at the Lex Bot:
+- Because the bot itself does not control the call, we need Lex intents that can transfer the call or hang up on the caller
+  - The "About" intent will play a long prompt describing the project
+  - The "Quit" intent will play a thank you prompt and disconnect the call
+  - The "Steve" intent in this case will transfer the call to an external number
+- When the Lex Bot can't match the above intents it sends the transcript (what the caller said) to the FallBack Intent which is connected to the [ChatGPT](ChatGPT/src/main/java/cloud/cleo/connectgpt/) Lambda
+  - The Lambda then sends the transcript to ChatGPT and returns the result to the Lex Bot with a dialog action of [ElicitIntent](https://docs.aws.amazon.com/lexv2/latest/APIReference/API_runtime_DialogAction.html)
+  - The result is the ChatGPT response is played back the caller and the LexBot is once again listening for the next Intent to match
+  - The conversation can continue until the caller hangs up or matches the Quit intent (saying good bye, thanks, all done, etc.)
+- The Lambda can also tell the Lex Bot to fullfill another intent
+  - After 2 subsequent silence timeouts the Lambda will respond with a Delegate to the "Quit" intent which will then disconnect the call.  This is needed because if someone calls and says nothing, we don't want to keep the call up consuming resources forever.
+  - Another possibility is to check the length of the chat history and disconnect the call for too many requests or check for profanity and also disconnect in this case.
 ![Call Flow Part 3](assets/flowpart3.png)
 
 
@@ -96,7 +111,8 @@ brew install corretto11
 brew install maven
 ```
 
-To build and deploy, run the following in your shell after you have cloned the repo:
+To build and deploy, run the following in your shell after you have cloned the repo.  Note: it may be easier to edit the [template.yaml](template.yaml) and change the defaults for the parameteres to 
+taste before running the build like the Connect Instance ID, then you won't have to specify the "--parameter-overrides" indicated below.
 
 ```bash
 java-connect-lex-chatgpt$ ./init.bash
@@ -111,8 +127,7 @@ You will see the progress as the stack deploys.  As metntioned earlier, you will
 that tells you there is no value for "OPENAI_API_KEY" in the [Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html).
 
 
-`Do not forget to delete the stack or you will continue to incure AWS charges for the resources`.  
-
+`Do not forget to delete the stack or you will continue to incure AWS charges for the resources`.
 
 
 
@@ -158,7 +173,8 @@ You can find more information and examples about filtering Lambda function logs 
 
 ## Cleanup
 
-To delete the demo, use the SAM CLI. `DO NOT FORGET TO RUN THIS OR YOU WILL CONTINUE TO BE CHARGED FOR AWS RESOURCES`.  
+To delete the demo, use the SAM CLI. `DO NOT FORGET TO RUN THIS OR YOU WILL CONTINUE TO BE CHARGED FOR AWS RESOURCES`.
+
 Prior to deleting the stack, you should ensure you have disassociated any phone numbers pointing to the Connect Flow.
 
 You can run the following:
@@ -395,7 +411,7 @@ Successfully created/updated stack - connect-chatgpt in us-east-1
 ## Testing Number
 
 If you have read down this far and you don't want to deploy this on your own but would like to see it in action:
-  - Call [CLEO Test Number 505-216-2949](tel:+15052162949)
+  - Call [CLEO Test Number +15052162949](tel:+15052162949)
   - If it detects you want to talk to person, it will transfer to a MCI test number, you can then just hang up
   - Please be kind as each call does cost money
     - Amazon Connect per minute charges
