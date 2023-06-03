@@ -47,7 +47,7 @@ Other goals of the project (technical focus):
 ![Architecture Diagram](assets/arch.jpg)
 
 ### CloudFormation Resources
-![Resource Diagram](assets/resources.jpg)
+![Resource Diagram](assets/resources.png)
 
 ### Call Flow
 ![Call Flow](assets/flow.png)
