@@ -1,9 +1,9 @@
-# AWS Connect ChatGPT via Lex in Java
+# AWS Connect ChatGPT Voice Bot via Lex in Java
 
 ## Background
 
 This project demonstrates an integration of [Amazon Connect](https://aws.amazon.com/pm/connect/) to [OpenAI ChatGPT](https://openai.com/product/chatgpt) in both English and Spanish via 
-an [AWS Lex Bot](https://aws.amazon.com/pm/lex/).  There are some examples out there is NodeJS and Python that demostrate a basic integration with some instruction, but not a fully working 
+an [AWS Lex Bot](https://aws.amazon.com/pm/lex/).  There are some examples out there in NodeJS and Python that demostrate a basic integration with some screen shots, but not a fully working 
 example (with chat context) that can be easily deployed via CloudFormation, including the call flow itself and the glue to bring it together with minimal console interaction.
 
 The basic strategy is to deploy a normal LexV2 Bot with intents to handle a couple cases (like help, talk to someone, and hanging up on the caller) and use the 
@@ -71,8 +71,9 @@ Checking to see if background process has something we need to act on:
 ## Contents
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
 
-- [/src/main/java/demo](src/main/java/demo) - Java Lambda Functions
-- [/src/main/resources/scripts](src/main/resources/scripts) - SQL Scripts used to initialize the DB from the [Custom Resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html) ([CloudFormationCustomResource.java](src/main/java/demo/CloudFormationCustomResource.java)) in CloudFormation.
+- [ChatGPT](ChatGPT/src/main/java/cloud/cleo/connectgpt/) - Lambda fullfillment hook that calls out to OpenAI ChatGPT
+- [PolyPromptCreation](PolyPromptCreation/src/main/java/cloud/cleo/connectgpt/)  - [Custom Resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html) Lambda that does all the static prompt creation
+- [NewCallLookup](NewCallLookup/src/main/java/cloud/cleo/connectgpt/) - Lambda that is called for every incoming call that logs it to DyanmoDB and updates Contact Attributes to play a condition prompt
 - CloudFormation script for all AWS resources
 	- [template.yaml](template.yaml) - Creates all the SAM lambda functions and associated AWS resources.
 
@@ -106,7 +107,8 @@ java-connect-lex-chatgpt$ sam deploy --parameter-overrides 'ParameterKey=CONNECT
 The first command will will setup some required components like the V4 Java Events library that is not published yet (this is a sub-module) and install the parent POM used by Lambda functions.
 The second command will build the source of the application. 
 The third command will package and deploy the project to AWS as a CloudFormation Stack. You must set the value of your Connect Instance ID (the UUID last of the ARN) or edit the default value in the template.
-You will see the progress as the stack deploys.
+You will see the progress as the stack deploys.  As metntioned earlier, you will need to put your OpenAI API Key into parameter store or the deploy will error, but it will give you an error message 
+that tells you there is no value for "OPENAI_API_KEY" in the [Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html).
 
 
 `Do not forget to delete the stack or you will continue to incure AWS charges for the resources`.  
@@ -116,15 +118,10 @@ You will see the progress as the stack deploys.
 
 ## Associate Phone number to the Connect Flow and place calls in
 
+Once you have deployed the project, in the Amazon Connect Console, you just need to associate the flow with a phone number.
 
+![Associate Flow to Phone Number](assets/phonenumber.png)
 
-When you open the API GW Endpoint URL in your browser you will see the above UI.  When the DB initializes, one address row is inserted for you, so you should see 1 row with an address Geo encoded and 2 entries in the `audit_log` tables.  The UI displays all the rows in both `address` and `audit_log` tables.  There are four actions to perform in the demo:
-
-- Add Row to Address Table - This adds Apple's HQ address to the table.  Normally after the refresh you would see the row without geo encoding.  If you then hit `Refresh`, you should see the Geo data populated into the row.
-- Add 5 Rows to Address Table - This adds 5 different addresses to the table.  Normally after the refresh you would see the rows without geo encoding.  If you then hit `Refresh`, you should see the Geo data populated into the rows.  Due to throttling this last one might be delayed a little.
-- Delete Last Address - This deletes the last address row from the `address` table.  You should see the last row go away and an `audit_log` row for the delete action.
-- Refresh - Does a simple refresh of the page (which reads all the tables again)
-- Clear Audit Log - Truncates the `audit_log` tables.
 
 ## Fetch, tail, and filter Lambda function logs
 
@@ -395,3 +392,13 @@ CREATE_COMPLETE                                 AWS::CloudFormation::Stack      
 Successfully created/updated stack - connect-chatgpt in us-east-1
 
 ```
+## Testing Number
+
+If you have read down this far and you don't want to deploy this on your own but would like to see it in action:
+  - Call [CLEO Test Number 505-216-2949](tel:+15052162949)
+  - If it detects you want to talk to person, it will transfer to a MCI test number, you can then just hang up
+  - Please be kind as each call does cost money
+    - Amazon Connect per minute charges
+    - AWS Lex per minute charges
+    - ChatGPT API calls
+  - If the number doesn't work then I may have been overrun with charges and needed to shut it down :(
