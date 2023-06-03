@@ -1,4 +1,4 @@
-# AWS Connect ChatGPT Voice Bot via Lex in Java
+# Amazon Connect ChatGPT Voice Bot via Lex in Java
 
 ## Background
 
@@ -94,7 +94,7 @@ At this point in the call, the language is known and control is now at the Lex B
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
 
 - [ChatGPT](ChatGPT/src/main/java/cloud/cleo/connectgpt/) - Lambda fullfillment hook that calls out to OpenAI ChatGPT
-- [PolyPromptCreation](PolyPromptCreation/src/main/java/cloud/cleo/connectgpt/)  - [Custom Resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html) Lambda that does all the static prompt creation
+- [PollyPromptCreation](PollyPromptCreation/src/main/java/cloud/cleo/connectgpt/)  - [Custom Resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html) Lambda that does all the static prompt creation
 - [NewCallLookup](NewCallLookup/src/main/java/cloud/cleo/connectgpt/) - Lambda that is called for every incoming call that logs it to DyanmoDB and updates Contact Attributes to play a conditional prompt
 - CloudFormation script for all AWS resources
 	- [template.yaml](template.yaml) - Creates all the SAM lambda functions and associated AWS resources.
