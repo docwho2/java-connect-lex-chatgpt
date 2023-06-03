@@ -46,6 +46,9 @@ Other goals of the project (technical focus):
 ### High Level Components
 ![Architecture Diagram](assets/arch.jpg)
 
+### CloudFormation Resources
+![Resource Diagram](assets/resources.jpg)
+
 ### Call Flow
 ![Call Flow](assets/flow.png)
 
