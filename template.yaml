@@ -23,7 +23,7 @@ Parameters:
     Description: The voice used for LEX and prompt generation for English
     Type: String
     Default: Joanna
-    AllowedValues:
+    AllowedValues: # https://docs.aws.amazon.com/polly/latest/dg/ntts-voices-main.html
         - Ivy      # Female (child)
         - Joanna   # Female
         - Kendra   # Female
@@ -70,7 +70,7 @@ Resources:
   BucketKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: Key Used for Bucket Encryption
+      Description: Key Used for Bucket Encryption Required by Connect
       KeyPolicy:
         Version: '2012-10-17'
         Id: !Sub ${AWS::StackName}-bucket-key

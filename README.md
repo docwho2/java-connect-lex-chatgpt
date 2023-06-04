@@ -1,4 +1,4 @@
-# Amazon Connect ChatGPT Voice Bot via Lex in Java
+# Amazon Connect ChatGPT Voice Bot via Lex
 
 ## Background
 
@@ -56,6 +56,18 @@ Other goals of the project (technical focus):
 When the call arrives at the Connect Call Flow we call a Lambda Function:
 - This lambda function simply takes the Connect Event payload and puts it onto an SNS Topic
 - This is a short NodeJS code block that is intended to quickly return and not perform any business logic
+  ```javascript
+  const {SNSClient, PublishCommand} = require("@aws-sdk/client-sns");
+  const client = new SNSClient();
+        exports.handler = async function (event) {
+            const params = {
+                Message: JSON.stringify(event),
+                TopicArn: '${NewCallTopic}'
+            };
+            const response = await client.send(new PublishCommand(params));
+            return {status: 'OK'};
+        };
+  ```
 - We don't want to block the call flow with any business logic and it's return value is simply ignored
 ![Call Flow Part 1](assets/flowpart1.png)
 
@@ -121,9 +133,9 @@ To build and deploy, run the following in your shell after you have cloned the r
 taste before running the build like the Connect Instance ID, then you won't have to specify the "--parameter-overrides" indicated below.
 
 ```bash
-java-connect-lex-chatgpt$ ./init.bash
-java-connect-lex-chatgpt$ sam build
-java-connect-lex-chatgpt$ sam deploy --parameter-overrides 'ParameterKey=CONNECTID,ParameterValue=<your connect instance ID>'
+./init.bash
+sam build
+sam deploy --parameter-overrides 'ParameterKey=CONNECTID,ParameterValue=<your connect instance ID>'
 ```
 
 The first command will will setup some required components like the V4 Java Events library that is not published yet (this is a sub-module) and install the parent POM used by Lambda functions.
@@ -150,11 +162,11 @@ To simplify troubleshooting, SAM CLI has a command called `sam logs`. `sam logs`
 
 
 ```bash
-java-connect-lex-chatgpt$ sam logs --tail
+sam logs --tail
 ```
 
 Example:
-```bash
+```
 2023/06/02/[72]88ab219a63d343d294d0a9947e8ab36a 2023-06-02T11:27:22.355000 RESTORE_START Runtime Version: java:11.v20	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:b8b295733fb8ae6769e0fb039181ce76e1f54a4d04bb5ca7ded937bb0d839109
 2023/06/02/[72]88ab219a63d343d294d0a9947e8ab36a 2023-06-02T11:27:22.719000 RESTORE_REPORT Restore Duration: 398.97 ms
 2023/06/02/[72]88ab219a63d343d294d0a9947e8ab36a 2023-06-02T11:27:22.722000 START RequestId: 8c360c87-d4b7-4423-b5f3-af02be3c1763 Version: 72
@@ -186,11 +198,11 @@ Prior to deleting the stack, you should ensure you have disassociated any phone 
 You can run the following:
 
 ```bash
-java-connect-lex-chatgpt$ sam delete
+sam delete
 ```
 
 ## Sample Deploy Output
-```bash
+```
 java-connect-lex-chatgpt$ sam deploy
 
 		Managed S3 bucket: aws-sam-cli-managed-default-samclisourcebucket
