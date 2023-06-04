@@ -3,42 +3,42 @@
 ## Background
 
 This project demonstrates an integration of [Amazon Connect](https://aws.amazon.com/pm/connect/) to [OpenAI ChatGPT](https://openai.com/product/chatgpt) in both English and Spanish via 
-an [AWS Lex Bot](https://aws.amazon.com/pm/lex/).  There are some examples out there in NodeJS and Python that demonstrate a basic integration with some screen shots, but not a fully working 
-example (with chat context) that can be easily deployed via CloudFormation, including the call flow itself and the glue to bring it together with minimal console interaction.
+an [AWS Lex Bot](https://aws.amazon.com/pm/lex/).  There are some examples available in NodeJS and Python that demonstrate a basic integration with some screen shots, but there isn't a fully working example (with chat context) 
+that can be easily deployed via CloudFormation, including the call flow itself and the glue to bring it together with minimal console interaction.
 
 The basic strategy is to deploy a normal LexV2 Bot with intents to handle a couple cases (like help, talk to someone, and hanging up on the caller) and use the 
 [AMAZON.FallbackIntent](https://docs.aws.amazon.com/lexv2/latest/dg/built-in-intent-fallback.html) with a [Lambda CodeHook](https://docs.aws.amazon.com/lexv2/latest/dg/paths-code-hook.html) 
-to send requests to ChatGPT and also maintain the Chat session so you can interact just like the web client.  An example being, you ask "What is the biggest lake in MN", then subsequently 
-you ask "how deep is it".  Because all your prompts are saved to a [Dyanamo DB Table](https://aws.amazon.com/dynamodb/) as you interact, the context is maintained and ChatGPT knows the 
-context of each question.  The project uses your callerID and today's date for session context.  So you can ask a question, hang up, call back, and ChatGPT will still have the context 
+to send requests to ChatGPT and also maintain the Chat session so you can interact just like the web client.  For example, you can ask "What is the biggest lake in MN", then subsequently 
+you ask "how deep is it".  Because all your prompts are saved to a [Dynamo DB Table](https://aws.amazon.com/dynamodb/) as you interact, the context is maintained and ChatGPT knows the 
+context of each question.  The project uses your callerID and today's date for session context.  So, you can ask a question, hang up, call back, and ChatGPT will still have the context 
 of what you said in the prior call.  When you call the next day, you are starting with a fresh context.
 
-Because tearing down and building Connect instances is rate limited and can lock you out for 30 days, you will need to pass in an instance ID of an existing Amazon Connect instance to deploy 
-this project.  You will also need to allocate a phone number and associate it with the created call flow.  You can of course use an existing phone number in your instance and temporarily point 
-it at the "connect-chatgpt-gptflow".  If you are deploying this, the assumption would be you are familiar enough with Amazon Connect to bring up an instance and allocate a phone number or you 
+Because tearing down and building Connect instances is rate-limited and can lock you out for 30 days, you will need to pass in an instance ID of an existing Amazon Connect instance to deploy 
+this project.  You will also need to allocate a phone number and associate it with the created call flow.  You can, of course, use an existing phone number in your instance and temporarily point 
+it at the "connect-chatgpt-gptflow".  If you are deploying this, the assumption would be that you are familiar enough with Amazon Connect to bring up an instance and allocate a phone number or you 
 already have an existing instance.  You will also need an [OpenAI API key](https://platform.openai.com/account/api-keys) saved to [Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html) 
 (OPENAI_API_KEY is the default in the template).
 
 
-Other Features:
+Other features:
 - Use of [Static Prompts](https://docs.aws.amazon.com/connect/latest/adminguide/setup-prompts-s3.html) defined in the CloudFormation itself.  
   Polly is fast inside Connect, but static prompts from S3 will provide lower latency for playback.
 - Background lookup of call data that doesn't block the call flow waiting on a result.
 - Multilingual support.  Spanish and English are supported, but another language supported by Lex and ChatGPT should be easy to implement.
 - Lex Intents:
-  - About/Help - Static prompt that describes the project.
+  - About/Help - A static prompt that describes the project.
   - Transfer - Transfer the call to a person (or mention the first name configured in the template).
-  - Hang Up - Play a good bye prompt and terminate the call when caller indicates they are done.
+  - Hang Up - Play a goodbye prompt and terminate the call when caller indicates they are done.
 
 
 Other goals of the project (technical focus):
 - SAM CloudFormation for all the components in play (`sam build` and then `sam deploy`) for simple deployment of the project.
-- Use of the to be released [V4 Java Event Objects](https://github.com/aws/aws-lambda-java-libs/tree/85837fa301a83f89bbb09683c35aa5df1077b7d4) instead of dealing with raw JSON for LexV2 Events.
-- Use of the [Dynamo DB Enhanced client](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/ddb-en-client-doc-api.html) to save Java Objects.
-- Generate Prompts with Polly and use SOX to convert them in a Lambda (a project in and of itself!).
+- Use of the to-be-released [V4 Java Event Objects](https://github.com/aws/aws-lambda-java-libs/tree/85837fa301a83f89bbb09683c35aa5df1077b7d4) instead of dealing with raw JSON for LexV2 Events.
+- Use of the [Dynamo DB Enhanced client](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/ddb-en-client-doc-api.html) to save Java objects.
+- Generate prompts with Polly and use SOX to convert them in a Lambda (a project in and of itself!).
 - Use of [SnapStart](https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html) to reduce latency (which is important for a voice interface) on Lambda Functions.
-- Dynamic Creation of the Connect Flow based on CloudFormation.
-- To simply provide a full working example in Java using the best available API's:
+- Dynamic creation of the Connect Flow based on CloudFormation.
+- To simply provide a fully working example in Java using the best available API's:
   - [openai-java](https://github.com/TheoKanning/openai-java)
 
 ## Architecture
@@ -72,31 +72,31 @@ When the call arrives at the Connect Call Flow we call a Lambda Function:
 
 ### Ask for Language then play conditional prompt
 Checking to see if background process has something we need to act on:
-- An initial welcome prompt is played (meanwhile our backend logic is executing).
-- We then check for language, in this case if the caller wants to interact in Spanish by pressing 2.
-- By this time (since several seconds have elapsed playing prompts) we check contact attributes that may have been set by the [NewCallLookup Lambda](NewCallLookup/src/main/java/cloud/cleo/connectgpt/NewCallLookup.java).
-- In this example if contact attribute "PlayPrompt" has a value of "true", we proceed to play a prompt that was generated by NewCallLookup Lambda by calling [UpdateContactAttributes](https://docs.aws.amazon.com/connect/latest/APIReference/API_UpdateContactAttributes.html).
-- Based on the Dyanmo Query, if this is a first time call, nothing is set, however if the caller has called before, an attribute is set with "Welcome Back".
-- This is just an example strategy to perform background work and later react to it.  I don't like a looping approach in the call flow waiting on a result, but rather check the result and if set, act upon it.  Of course different use cases might require a result to proceed with the call.
+- An initial welcome prompt is played (meanwhile, our backend logic is executing).
+- We then check for the language, in this case, if the caller wants to interact in Spanish by pressing 2.
+- By this time, (since several seconds have elapsed playing prompts) we check contact attributes that may have been set by the [NewCallLookup Lambda](NewCallLookup/src/main/java/cloud/cleo/connectgpt/NewCallLookup.java).
+- In this example if the contact attribute "PlayPrompt" has a value of "true", we proceed to play a prompt that was generated by the NewCallLookup Lambda by calling [UpdateContactAttributes](https://docs.aws.amazon.com/connect/latest/APIReference/API_UpdateContactAttributes.html).
+- Based on the Dynamo Query, if this is a first time call, nothing is set.  However if the caller has called before, an attribute is set with "Welcome Back".
+- This is just an example strategy to perform background work and later react to it.  I don't like a looping approach in the call flow waiting on a result, but rather check the result and if set, act upon it.  Of course, different use cases might require a result to proceed with the call.
 ![Call Flow Part 2](assets/flowpart2.png)
 
 ### Lex/ChatGPT and output intents
 
 At this point in the call, the language is known and control is now with the Lex Bot:
-- Because the bot itself does not control the call, we need Lex intents that can transfer the call or hang up on the caller which must be done by the Call Flow.
+- Because the bot itself does not control the call, we need Lex intents that can transfer the call or hang up on the caller, which must be done by the Call Flow.
   - The "About" intent will play a long prompt describing the project.
   - The "Quit" intent will play a thank you prompt and disconnect the call.
   - The "Transfer" intent in this case will transfer the call to an external number.
 - When the Lex Bot can't match the above intents, it sends the transcript (what the caller said) to the [FallBack Intent](https://docs.aws.amazon.com/lexv2/latest/dg/built-in-intent-fallback.html)  which is connected to the [ChatGPT Lambda](ChatGPT/src/main/java/cloud/cleo/connectgpt/ChatGPTLambda.java).
   - The Lambda then sends the transcript to ChatGPT and returns the result to the Lex Bot with a dialog action of [ElicitIntent](https://docs.aws.amazon.com/lexv2/latest/APIReference/API_runtime_DialogAction.html).
-  - The result is the ChatGPT response is played back the caller and the LexBot is once again listening for the next Intent to match.
+  - The result is the ChatGPT response is played back to the caller and the LexBot is once again listening for the next Intent to match.
   - The conversation can continue until the caller hangs up or matches the Quit intent (saying good bye, thanks, all done, etc.) or Transfer intent.
 - The Lambda can also tell the Lex Bot to fullfill another intent:
   - After 2 subsequent silence timeouts the Lambda will respond with a Delegate to the "Quit" intent which will then disconnect the call.  This is needed because if someone calls and says nothing, we don't want to keep the call up consuming resources forever.
   - Another possibility is to check the length of the chat history and disconnect the call for too many requests or check for profanity and also disconnect in that case.
 - Lambda Error Handling:
   - A number of things can happen and go wrong and the Lambda has to respond properly.
-  - If you ask for something complicated or ChatGPT is just busy/slow at the moment, the API call will timeout and the appropiate response (in the callers language) must be returned telling the caller to try again.
+  - If you ask for something complicated or ChatGPT is just busy/slow at the moment, the API call will timeout, and the appropiate response (in the callers language) must be returned telling the caller to try again.
   - If ChatGPT is down, or there is a network connectivity issue, any unhandled exception in the code is returned telling the caller something is down, try again later.
 ![Call Flow Part 3](assets/flowpart3.png)
 
