@@ -477,11 +477,6 @@ Resources:
       Runtime: nodejs18.x
       MemorySize: 512
       Timeout: 5
-      Environment:
-        Variables:
-          SNS_TOPIC_ARN: !Ref NewCallTopic
-          # Don't need to set anything for this lambda other than above
-          JAVA_TOOL_OPTIONS: !Ref AWS::NoValue
       Policies:
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt NewCallTopic.TopicName
