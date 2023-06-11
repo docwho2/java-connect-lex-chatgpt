@@ -132,7 +132,10 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
             session.addAssistantMessage(botResponse);
 
             // Since we have a valid response, add message asking if there is anything else
-            botResponse = botResponse + lang.getString(ANYTHING_ELSE);
+            if ( ! "Text".equalsIgnoreCase(lexRequest.getInputMode()) ) {
+                // Only add if not text (added to voice response)
+                botResponse = botResponse + lang.getString(ANYTHING_ELSE);
+            }
 
             // Save the session to dynamo
             log.debug("Start Saving Session State");
