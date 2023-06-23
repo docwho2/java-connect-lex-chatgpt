@@ -5,7 +5,7 @@
     <artifactId>parent-pom</artifactId>
     <packaging>pom</packaging>
     <version>1.0</version>
-    <name>Parent POM</name>
+    <name>Connect GPT Parent POM</name>
     <description>Top Level POM</description>
     <organization>
         <name>CLEO Cloud Solutions</name>
