@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.service.OpenAiService;
 import java.net.SocketTimeoutException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +46,7 @@ public class ChatGPTLambda implements RequestHandler<LexV2Event, LexV2Response> 
 
     final static DynamoDbTable<ChatGPTSessionState> sessionState = enhancedClient.table(System.getenv("SESSION_TABLE_NAME"), schema);
 
-    final static OpenAiService open_ai_service = new OpenAiService(System.getenv("OPENAI_API_KEY"));
+    final static OpenAiService open_ai_service = new OpenAiService(System.getenv("OPENAI_API_KEY"), Duration.ofSeconds(20));
     final static String OPENAI_MODEL = System.getenv("OPENAI_MODEL");
 
     @Override
