@@ -84,33 +84,4 @@
         
         </dependencies>
     </dependencyManagement>
-    
-    
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.4.1</version>
-                <configuration>
-                    
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-        <extensions>
-            <extension>
-                <!-- to support S3 URL's -->
-                <groupId>org.springframework.build</groupId>
-                <artifactId>aws-maven</artifactId>
-            </extension>
-        </extensions>
-    </build>
 </project>
