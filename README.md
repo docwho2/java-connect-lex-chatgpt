@@ -428,10 +428,9 @@ Successfully created/updated stack - connect-chatgpt in us-east-1
 ## Testing Number
 
 If you have read down this far and you don't want to deploy this on your own, but would like to see it in action:
-  - Call the [CLEO Test Number +1 (505) 216-2949](tel:+15052162949).
-  - If it detects you want to talk to person, it will transfer to a MCI test number, you can then just hang up.
+  - Call the [CLEO Main Number +1 (612) 255-9991](tel:+16122559991).
+  - If it detects you want to talk to person, it will transfer to my cell phone, you can then just hang up fast unless you reall want to speak to me.
   - Please be kind as each call does cost money.
     - Amazon Connect per minute charges.
     - AWS Lex per minute charges.
     - ChatGPT API calls.
-  - If the number doesn't work then I may have been overrun with charges and needed to shut it down :(
