@@ -6,14 +6,6 @@
     <version>1.0</version>
     <packaging>jar</packaging>
     <name>New Call Lookup</name>
-    <organization>
-        <name>CLEO Cloud Solutions</name>
-        <url>https://cleo.cloud</url>
-    </organization>
-    <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-    </properties>
 
     <parent>
         <groupId>cloud.cleo.awsconnect-chatgpt</groupId>

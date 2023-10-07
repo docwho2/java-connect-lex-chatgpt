@@ -61,10 +61,10 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: java11
+    Runtime: java17
     Timeout: 30
     MemorySize: 3009
-    Architectures:  # SnapStart on Java 11 requires x86
+    Architectures:  # SnapStart on Java 17 requires x86
         - x86_64
 
 Resources:
