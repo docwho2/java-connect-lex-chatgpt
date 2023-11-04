@@ -34,10 +34,9 @@ jobs:
         
     - name: Build up all the libraries
       run: |
-	mvn install -f LambdaEventsV4/aws-lambda-java-serialization/pom.xml -DskipTests
-	mvn install -f LambdaEventsV4/aws-lambda-java-events/pom.xml -DskipTests
-	mvn install
-
+        mvn install -f LambdaEventsV4/aws-lambda-java-serialization/pom.xml -DskipTests
+        mvn install -f LambdaEventsV4/aws-lambda-java-events/pom.xml -DskipTests
+        mvn install
 
     - name: Setup AWS SAM
       uses: aws-actions/setup-sam@v2
