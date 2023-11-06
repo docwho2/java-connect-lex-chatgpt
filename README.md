@@ -1,5 +1,8 @@
 # Amazon Connect ChatGPT Voice Bot via Lex
 
+If you're looking for a more advanced use case of [OpenAI ChatGPT](https://openai.com/product/chatgpt) via voice interface, please also see [Amazon Chime SMA ChatGPT IVR for Square Retail](https://github.com/docwho2/java-squareup-chatgpt-ivr).
+
+
 ## Background
 
 This project demonstrates an integration of [Amazon Connect](https://aws.amazon.com/pm/connect/) to [OpenAI ChatGPT](https://openai.com/product/chatgpt) in both English and Spanish via 
