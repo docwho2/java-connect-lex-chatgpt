@@ -42,7 +42,13 @@ jobs:
       uses: aws-actions/setup-sam@v2
       with:
         use-installer: true
-        
+    
+    - name: Cache SAM Build files
+      uses: actions/cache@v3
+      with:
+        path: .aws-sam
+        key: ${{ runner.os }}-sam
+       
     - name: SAM Build
       run: sam build
       
