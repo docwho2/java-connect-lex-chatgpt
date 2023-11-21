@@ -484,7 +484,16 @@ Resources:
             //console.log("Success, message sent. MessageID:", response.MessageId);
             return {status: 'OK'};
         };
-            
+  
+  SendToSNSLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ForwardEventToSNS}'
+      RetentionInDays: 90
+  
+  
   SendToSNSConnectIntegration:
     Type: AWS::Connect::IntegrationAssociation
     Properties:
@@ -506,6 +515,7 @@ Resources:
                 
   NewCallLookup:
     Type: AWS::Serverless::Function
+    DependsOn: NewCallLookupLogGroup
     Properties:
       FunctionName: !Sub ${AWS::StackName}-NewCallLookup
       Description: Lookup counters from Dynamo Table and set contact values
@@ -534,7 +544,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub '/aws/lambda/${NewCallLookup}'
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-NewCallLookup'
       RetentionInDays: 90
                 
   CallTable:
@@ -559,6 +569,7 @@ Resources:
                 
   ChatGPT:
     Type: AWS::Serverless::Function
+    DependsOn: ChatGPTLogGroup
     Properties:
       FunctionName: !Sub ${AWS::StackName}-ChatGPT
       Description: Lex fullfilment that talks to ChatGPT service
@@ -583,7 +594,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub '/aws/lambda/${ChatGPT}'
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-ChatGPT'
       RetentionInDays: 90
         
   LexToChatGPTPerm:
