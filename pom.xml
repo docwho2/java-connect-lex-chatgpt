@@ -25,6 +25,15 @@
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
     
+    <modules>
+        <!-- These are needed for lex events (bots) and JSON processing -->
+        <module>LambdaEventsV4/aws-lambda-java-serialization</module>
+        <module>LambdaEventsV4/aws-lambda-java-events</module>
+        <module>NewCallLookup</module>
+        <module>PollyPromptCreation</module>
+    </modules>
+    
+    
     <dependencyManagement>
         <dependencies>
             
@@ -88,4 +97,54 @@
         
         </dependencies>
     </dependencyManagement>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <finalName>twilio</finalName>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>module-info.class</exclude>
+                                <exclude>META-INF/MANIFEST*</exclude>
+                                <exclude>META-INF/LICENSE*</exclude>
+                                <exclude>META-INF/NOTICE*</exclude>
+                                <exclude>META-INF/DEPENDENCIES*</exclude>
+                                <exclude>codegen-resources/</exclude>
+                                <!-- <exclude>**/Log4j2Plugins.dat</exclude>  -->
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                    implementation="com.github.edwgiz.mavenShadePlugin.log4j2CacheTransformer.PluginsCacheFileTransformer">
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.edwgiz</groupId>
+                        <artifactId>maven-shade-plugin.log4j2-cachefile-transformer</artifactId>
+                        <version>2.8.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
 </project>

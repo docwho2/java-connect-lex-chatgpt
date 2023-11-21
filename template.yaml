@@ -153,7 +153,14 @@ Resources:
               Action:
                 - polly:SynthesizeSpeech
               Resource: '*'
-            
+  
+  PromptCreatorLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: RetainExceptOnCreate
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${PromptCreator}'
+      RetentionInDays: 30
   
   MainPrompt:
     Type: Custom::PromptCreator
@@ -520,7 +527,14 @@ Resources:
             Type: SNS
             Properties:
                 Topic: !Ref NewCallTopic
-                
+  
+  NewCallLookupLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${NewCallLookup}'
+      RetentionInDays: 90
                 
   CallTable:
     Type: AWS::DynamoDB::Table
@@ -563,7 +577,13 @@ Resources:
         - DynamoDBWritePolicy:
             TableName: !Ref SessionTable
   
-  
+  ChatGPTLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ChatGPT}'
+      RetentionInDays: 90
         
   LexToChatGPTPerm:
       Type: AWS::Lambda::Permission
