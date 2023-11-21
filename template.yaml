@@ -490,7 +490,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub '/aws/lambda/${ForwardEventToSNS}'
+      LogGroupName: !Sub '/aws/lambda/${SendToSNS}'
       RetentionInDays: 90
   
   
