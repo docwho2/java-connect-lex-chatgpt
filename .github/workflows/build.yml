@@ -32,11 +32,9 @@ jobs:
         distribution: 'corretto'
         cache: maven
         
-    - name: Build up all the libraries
+    - name: Build all the libraries
       run: |
-        mvn install -f LambdaEventsV4/aws-lambda-java-serialization/pom.xml -DskipTests --no-transfer-progress
-        mvn install -f LambdaEventsV4/aws-lambda-java-events/pom.xml -DskipTests --no-transfer-progress
-        mvn install --no-transfer-progress
+        mvn install --no-transfer-progress -DskipTests
 
     - name: Setup AWS SAM
       uses: aws-actions/setup-sam@v2
