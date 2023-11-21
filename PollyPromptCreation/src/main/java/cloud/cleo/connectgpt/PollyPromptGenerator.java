@@ -39,7 +39,7 @@ import software.amazon.lambda.powertools.cloudformation.Response;
 public class PollyPromptGenerator extends AbstractCustomResourceHandler {
 
     // Initialize the Log4j logger.
-    Logger log = LogManager.getLogger();
+    Logger log = LogManager.getLogger(PollyPromptGenerator.class);
 
     private final static PollyClient polly = PollyClient.builder()
             .region(Region.of(System.getenv(SdkSystemSetting.AWS_REGION.environmentVariable())))

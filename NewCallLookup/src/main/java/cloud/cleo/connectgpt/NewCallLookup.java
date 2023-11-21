@@ -33,7 +33,7 @@ import software.amazon.awssdk.services.connect.ConnectClient;
 public class NewCallLookup implements RequestHandler<SNSEvent, Void> {
 
     // Initialize the Log4j logger.
-    Logger log = LogManager.getLogger();
+    Logger log = LogManager.getLogger(NewCallLookup.class);
 
     final static ConnectClient connect = ConnectClient.builder()
             .region(Region.of(System.getenv(SdkSystemSetting.AWS_REGION.environmentVariable())))
