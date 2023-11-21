@@ -106,7 +106,6 @@
                 <version>3.5.1</version>
                 <configuration>
                     <createDependencyReducedPom>false</createDependencyReducedPom>
-                    <finalName>twilio</finalName>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>
