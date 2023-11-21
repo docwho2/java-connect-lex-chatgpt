@@ -136,6 +136,7 @@ Resources:
  
   PromptCreator:
     Type: AWS::Serverless::Function
+    DependsOn: PromptCreatorLogGroup
     Properties:
       FunctionName: !Sub ${AWS::StackName}-PromptCreator
       Description: Creates Static prompts to be used in Connect Flows
@@ -159,7 +160,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: RetainExceptOnCreate
     Properties:
-      LogGroupName: !Sub '/aws/lambda/${PromptCreator}'
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-PromptCreator'
       RetentionInDays: 30
   
   MainPrompt:
