@@ -31,6 +31,7 @@
         <module>LambdaEventsV4/aws-lambda-java-events</module>
         <module>NewCallLookup</module>
         <module>PollyPromptCreation</module>
+        <module>ChatGPT</module>
     </modules>
     
     
