@@ -1,14 +1,11 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package cloud.cleo.connectgpt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.ConnectEvent;
 import com.amazonaws.services.lambda.runtime.events.SNSEvent;
-import com.amazonaws.services.lambda.serialization.JacksonPojoSerializer;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -39,7 +36,7 @@ public class NewCallLookup implements RequestHandler<SNSEvent, Void> {
             .region(Region.of(System.getenv(SdkSystemSetting.AWS_REGION.environmentVariable())))
             .build();
 
-    final static JacksonPojoSerializer ser = JacksonPojoSerializer.getInstance();
+    final static ObjectMapper mapper = new ObjectMapper();
 
     final static TableSchema<CallRecord> schema = TableSchema.fromBean(CallRecord.class);
 
@@ -48,6 +45,11 @@ public class NewCallLookup implements RequestHandler<SNSEvent, Void> {
 
     final static DynamoDbTable<CallRecord> calls = enhancedClient.table(System.getenv("CALLS_TABLE_NAME"), schema);
 
+    
+    static {
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+    
     @Override
     public Void handleRequest(SNSEvent event, Context context) {
         try {
@@ -55,7 +57,7 @@ public class NewCallLookup implements RequestHandler<SNSEvent, Void> {
             final var today = LocalDate.now(ZoneId.of("America/Chicago"));
 
             // Deserilize the event content into a ConnectEvent which was forwarded via SNS
-            final ConnectEvent connEvent = ser.fromJson(event.getRecords().get(0).getSns().getMessage(), ConnectEvent.class);
+            final ConnectEvent connEvent = mapper.readValue(event.getRecords().get(0).getSNS().getMessage(), ConnectEvent.class);
 
             log.debug("Connect Event is " + connEvent);
 
@@ -107,7 +109,7 @@ public class NewCallLookup implements RequestHandler<SNSEvent, Void> {
                     //final var resSer = ser.getMapper().convertValue(res.toBuilder(), UpdateContactAttributesResponse.serializableBuilderClass());
                     //log.debug("Response from Update Contact Attributes is: " + ser.getMapper().valueToTree(resSer).toPrettyString());
                 } catch (Exception e) {
-                    log.error("Could Not Update Contract Center Attrs", e);
+                    log.error("Could Not Update Contact Center Attrs", e);
                 }
             }
 

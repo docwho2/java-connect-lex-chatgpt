@@ -121,13 +121,13 @@ The Serverless Application Model Command Line Interface (SAM CLI) is an extensio
 To use the SAM CLI, you need the following tools.
 
 * SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* Java17 - [Install the Java 17](https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
+* Java21 - [Install Java 21](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
 * Maven - [Install Maven](https://maven.apache.org/install.html)
 
 If you have brew installed then
 ```bash
 brew install aws-sam-cli
-brew install corretto17
+brew install corretto@21
 brew install maven
 ```
 
@@ -432,7 +432,7 @@ Successfully created/updated stack - connect-chatgpt in us-east-1
 
 If you have read down this far and you don't want to deploy this on your own, but would like to see it in action:
   - Call the [CLEO Main Number +1 (612) 255-9991](tel:+16122559991).
-  - If it detects you want to talk to person, it will transfer to my cell phone, you can then just hang up fast unless you reall want to speak to me.
+  - If it detects you want to talk to person, it will transfer to the MCI Test number which tells you your caller ID.
   - Please be kind as each call does cost money.
     - Amazon Connect per minute charges.
     - AWS Lex per minute charges.

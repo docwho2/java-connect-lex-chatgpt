@@ -41,7 +41,7 @@ warm_containers = "EAGER"
 [cleo.deploy]
 [cleo.deploy.parameters]
 region = "us-east-1"
-parameter_overrides = "OPENAIMODEL=\"gpt-3.5-turbo-1106\""
+parameter_overrides = "OPENAIMODEL=\"gpt-4o-mini\""
 stack_name = "cleo-connect-chatgpt"
 resolve_s3 = true
 s3_prefix = "cleo-connect-chatgpt"

@@ -1,18 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package cloud.cleo.connectgpt;
 
+import cloud.cleo.connectgpt.LexV2Event.DialogAction;
+import cloud.cleo.connectgpt.LexV2Event.Intent;
+import cloud.cleo.connectgpt.LexV2Event.SessionState;
 import cloud.cleo.connectgpt.lang.LangUtil;
 import static cloud.cleo.connectgpt.lang.LangUtil.LanguageIds.*;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.LexV2Event;
-import com.amazonaws.services.lambda.runtime.events.LexV2Event.DialogAction;
-import com.amazonaws.services.lambda.runtime.events.LexV2Event.Intent;
-import com.amazonaws.services.lambda.runtime.events.LexV2Event.SessionState;
-import com.amazonaws.services.lambda.runtime.events.LexV2Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.service.OpenAiService;

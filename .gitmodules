@@ -1,4 +1,0 @@
-[submodule "LambdaEventsV4"]
-	path = LambdaEventsV4
-	url = https://github.com/aws/aws-lambda-java-libs.git
-	branch = events-v4-serialization-v2

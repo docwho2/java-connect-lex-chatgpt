@@ -15,11 +15,12 @@ Parameters:
   OPENAIMODEL:
     Description: OpenAI ChatGPT Model
     Type: String
-    Default: gpt-3.5-turbo
+    Default: gpt-4o-mini
     AllowedValues: # https://platform.openai.com/docs/models/overview
         - gpt-3.5-turbo-1106
         - gpt-3.5-turbo
         - gpt-4
+        - gpt-4o-mini
   VOICEIDEN:
     Description: The voice used for LEX and prompt generation for English
     Type: String
@@ -61,11 +62,9 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: java17
+    Runtime: java21
     Timeout: 30
     MemorySize: 3009
-    Architectures:  # SnapStart on Java 17 requires x86
-        - x86_64
 
 Resources:
   BucketKey:
@@ -142,6 +141,8 @@ Resources:
       Description: Creates Static prompts to be used in Connect Flows
       Handler: cloud.cleo.connectgpt.PollyPromptGenerator
       CodeUri: ./PollyPromptCreation
+      Architectures:  # x86 because naitive SOX libraries
+        - x86_64
       Environment: 
         Variables:
             PROMPT_BUCKET: !Ref PromptBucket
@@ -521,6 +522,8 @@ Resources:
       Description: Lookup counters from Dynamo Table and set contact values
       Handler: cloud.cleo.connectgpt.NewCallLookup
       CodeUri: ./NewCallLookup
+      Architectures:  # SnapStart now supported on ARM
+        - arm64
       SnapStart:
         ApplyOn: PublishedVersions
       AutoPublishAlias: SNAPSTART
@@ -576,6 +579,8 @@ Resources:
       Handler: cloud.cleo.connectgpt.ChatGPTLambda
       AutoPublishAlias: SNAPSTART
       CodeUri: ./ChatGPT
+      Architectures:  # SnapStart now supported on ARM
+        - arm64
       Environment: 
         Variables:
           OPENAI_MODEL: !Ref OPENAIMODEL
