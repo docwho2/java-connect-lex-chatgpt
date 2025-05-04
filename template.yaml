@@ -467,7 +467,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-ForwardEventToSNS
       Description: Lambda that will forward payload to SNS Topic when new call arrives
       Handler: index.handler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       MemorySize: 512
       Timeout: 5
       Policies:
