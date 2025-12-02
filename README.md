@@ -1,6 +1,6 @@
 # Amazon Connect ChatGPT Voice Bot via Lex
 
-If you're looking for a more advanced use case of [OpenAI ChatGPT](https://openai.com/product/chatgpt) via voice interface, please also see [Amazon Chime SMA ChatGPT IVR for Square Retail](https://github.com/docwho2/java-squareup-chatgpt-ivr).
+If you're looking for a more advanced use case of [OpenAI ChatGPT](https://openai.com/product/chatgpt) via voice interface, please also see [Amazon Chime SMA Spring AI IVR for Square Retail](https://github.com/docwho2/java-squareup-spring-ai-ivr).
 
 
 ## Background
@@ -428,12 +428,3 @@ CREATE_COMPLETE                                 AWS::CloudFormation::Stack      
 Successfully created/updated stack - connect-chatgpt in us-east-1
 
 ```
-## Testing Number
-
-If you have read down this far and you don't want to deploy this on your own, but would like to see it in action:
-  - Call the [CLEO Main Number +1 (612) 255-9991](tel:+16122559991).
-  - If it detects you want to talk to person, it will transfer to the MCI Test number which tells you your caller ID.
-  - Please be kind as each call does cost money.
-    - Amazon Connect per minute charges.
-    - AWS Lex per minute charges.
-    - ChatGPT API calls.
